@@ -16,53 +16,40 @@
 # https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
 
 import base64
+import re
+import struct
+from typing import List
 
-BITS_IN_BYTE: int = 8
-
-STARTING_POSITION: str = (
-    "00000111110011100000111110000000000011000000011111001110000011111000000000001100"
-)
-ENCODED_STARTING_POSITION: str = "4HPwATDgc/ABMA"
-
-
-def _swap_endian(position: str) -> str:
-    return "".join(
-        [
-            position[i : i + BITS_IN_BYTE][::-1]
-            for i in range(0, len(position), BITS_IN_BYTE)
-        ]
-    )
-
-
-def _to_int(position: str) -> int:
-    return int(position, 2)
-
-
-def _to_bytes(position: str) -> bytes:
-    return bytes.fromhex(str(position)[2:])
-
-
-def _to_base64(position: bytes) -> bytes:
-    return base64.b64encode(position)
+BYTE_LEN: int = 8
 
 
 def encode(position: str) -> str:
-    position_base64: bytes = _to_base64(_to_bytes(hex(_to_int(_swap_endian(position)))))
-    return position_base64[:-2].decode()
+    """Encode a binary string and return a Position ID.
 
+    >>> encode('00000111110011100000111110000000000011000000011111001110000011111000000000001100')
+    '4HPwATDgc/ABMA'
 
-def _from_base64(position: bytes) -> bytes:
-    return base64.b64decode(position)
+    """
+    assert len(position) == 80, "Binary position must be exactly 80 characters."
+    assert (
+        re.match("^[01]+$", position) is not None
+    ), "Binary position may only contain 0s and 1s."
 
-
-def _from_bytes(position: bytes) -> int:
-    return int.from_bytes(position, byteorder="big")
-
-
-def _from_int(position: int) -> str:
-    return bin(position)[2:]
+    byte_array: List[str] = [
+        position[i : i + BYTE_LEN] for i in range(0, len(position), BYTE_LEN)
+    ]
+    position_bytes: bytes = struct.pack("10B", *[int(b[::-1], 2) for b in byte_array])
+    position_b64: bytes = base64.b64encode(position_bytes)
+    return position_b64.decode()[:-2]
 
 
 def decode(position: str) -> str:
-    position_base64: bytes = bytes((position + "==").encode())
-    return _swap_endian(_from_int(_from_bytes(_from_base64(position_base64))))
+    """Decode a Position ID and return a binary string.
+
+    >>> decode('4HPwATDgc/ABMA')
+    '00000111110011100000111110000000000011000000011111001110000011111000000000001100'
+    """
+    position_b64: str = position + "=="
+    position_bytes: bytes = base64.b64decode(position_b64)
+    position_binary: str = "".join([format(b, "08b")[::-1] for b in position_bytes])
+    return position_binary
