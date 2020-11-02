@@ -53,3 +53,17 @@ def decode(position_id: str) -> str:
     packed_bytes: bytes = base64.b64decode(b64)
     position_key: str = "".join([format(b, "08b")[::-1] for b in packed_bytes])
     return position_key
+
+
+def position_from_key(position_key: str) -> List[List[int]]:
+    """Return an internal position from a Position Key.
+
+    >>> position_from_key('00000111110011100000111110000000000011000000011111001110000011111000000000001100')
+    [[0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0], [0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]]
+
+    """
+    num_checkers: List[int] = [
+        sum(int(n) for n in pos) for pos in position_key.split("0")[:50]
+    ]
+    position: List[List[int]] = [num_checkers[:25], num_checkers[25:]]
+    return position
