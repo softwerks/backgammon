@@ -16,6 +16,7 @@
 # https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
 
 import base64
+import itertools
 import re
 import struct
 from typing import List
@@ -67,3 +68,15 @@ def position_from_key(position_key: str) -> List[List[int]]:
     ]
     position: List[List[int]] = [num_checkers[:25], num_checkers[25:]]
     return position
+
+
+def key_from_position(position: List[List[int]]) -> str:
+    """Return a Position Key from an internal position.
+
+    >>> key_from_position([[0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0], [0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]])
+    '00000111110011100000111110000000000011000000011111001110000011111000000000001100'
+
+    """
+    num_checkers: List[int] = list(itertools.chain.from_iterable(position))
+    position_key: str = "".join(["1"*n + "0" for n in num_checkers]).ljust(80, "0")
+    return position_key
