@@ -23,33 +23,33 @@ from typing import List
 BYTE_LEN: int = 8
 
 
-def encode(position: str) -> str:
-    """Encode a binary string and return a Position ID.
+def encode(position_key: str) -> str:
+    """Encode a binary Position Key and return a Position ID.
 
     >>> encode('00000111110011100000111110000000000011000000011111001110000011111000000000001100')
     '4HPwATDgc/ABMA'
 
     """
-    assert len(position) == 80, "Binary position must be exactly 80 characters."
+    assert len(position_key) == 80, "Position Key must be exactly 80 characters."
     assert (
-        re.match("^[01]+$", position) is not None
-    ), "Binary position may only contain 0s and 1s."
+        re.match("^[01]+$", position_key) is not None
+    ), "Position Key may only contain 0s and 1s."
 
     byte_array: List[str] = [
-        position[i : i + BYTE_LEN] for i in range(0, len(position), BYTE_LEN)
+        position_key[i : i + BYTE_LEN] for i in range(0, len(position_key), BYTE_LEN)
     ]
-    position_bytes: bytes = struct.pack("10B", *[int(b[::-1], 2) for b in byte_array])
-    position_b64: bytes = base64.b64encode(position_bytes)
-    return position_b64.decode()[:-2]
+    packed_bytes: bytes = struct.pack("10B", *[int(b[::-1], 2) for b in byte_array])
+    b64: bytes = base64.b64encode(packed_bytes)
+    return b64.decode()[:-2]
 
 
-def decode(position: str) -> str:
-    """Decode a Position ID and return a binary string.
+def decode(position_id: str) -> str:
+    """Decode a Position ID and return a binary Position Key.
 
     >>> decode('4HPwATDgc/ABMA')
     '00000111110011100000111110000000000011000000011111001110000011111000000000001100'
     """
-    position_b64: str = position + "=="
-    position_bytes: bytes = base64.b64decode(position_b64)
-    position_binary: str = "".join([format(b, "08b")[::-1] for b in position_bytes])
-    return position_binary
+    b64: str = position_id + "=="
+    packed_bytes: bytes = base64.b64decode(b64)
+    position_key: str = "".join([format(b, "08b")[::-1] for b in packed_bytes])
+    return position_key
