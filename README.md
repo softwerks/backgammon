@@ -1,3 +1,3 @@
 # Backgammon
 
-Backgammon engine for the [Bacgkammon Network](https://www.bkgmn.net).
+Backgammon engine for the [Backgammon Network](https://www.bkgmn.net).
