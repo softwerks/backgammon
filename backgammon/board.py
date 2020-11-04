@@ -56,11 +56,11 @@ class Board:
         ascii_board: str = ""
         position_id: str = position.encode(position.key_from_position(self.position))
         ascii_board += f"Position ID: {position_id}\n"
-        ascii_board += "+13-14-15-16-17-18-19-20-21-22-23-24-+\n"
+        ascii_board += " +13-14-15-16-17-18-19-20-21-22-23-24-+\n"
         for i in range(len(board)):
-            ascii_board += "|"
+            ascii_board += ("^|" if self.dice_owner == 0 else "v|") if i == 6 else " |"
             ascii_board += "".join(board[i])
             ascii_board += "|"
             ascii_board += "\n"
-        ascii_board += "+12-11-10--9--8--7--6--5--4--3--2--1-+\n"
+        ascii_board += " +12-11-10--9--8--7--6--5--4--3--2--1-+\n"
         return ascii_board
