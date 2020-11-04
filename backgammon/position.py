@@ -78,5 +78,5 @@ def key_from_position(position: List[List[int]]) -> str:
 
     """
     num_checkers: List[int] = list(itertools.chain.from_iterable(position))
-    position_key: str = "".join(["1"*n + "0" for n in num_checkers]).ljust(80, "0")
+    position_key: str = "".join(["1" * n + "0" for n in num_checkers]).ljust(80, "0")
     return position_key
