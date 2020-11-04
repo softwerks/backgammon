@@ -48,8 +48,8 @@ class Board:
             board = checkers(board, position[:12][::-1], False, " X ")
             return board
 
-        board = p0_checkers(board, self.position[0 if self.dice_owner is 0 else 1])
-        board = p1_checkers(board, self.position[0 if self.dice_owner is 1 else 1])
+        board = p0_checkers(board, self.position[0 if self.dice_owner == 0 else 1])
+        board = p1_checkers(board, self.position[0 if self.dice_owner == 1 else 1])
 
         # bar pos[25]
 
