@@ -18,38 +18,45 @@ from backgammon import position
 
 STARTING_POSITION_ID = "4HPwATDgc/ABMA"
 
+
 class Backgammon:
     def __init__(self, position_id: str = STARTING_POSITION_ID):
-        position_key = position.decode(position_id)
-        self.position: List[List[int]] = position.position_from_key(position_key)
+        position_key: str = position.decode(position_id)
+        self.position: List[int] = position.position_from_key(position_key)
         self.dice_owner: int = 0
 
     def __str__(self):
         board: List[List[str]] = [["   " for j in range(12)] for i in range(11)]
 
-        def checkers(
-            board: List[List[str]], position: List[int], top: bool, checker: str
-        ) -> List[List[str]]:
-            for i, checkers in enumerate(position):
-                row: int = 0 if top else 10
-                while checkers > 0:
-                    board[row][i] = checker
-                    checkers -= 1
-                    row += 1 if top else -1
+        def checkers(board: List[List[str]]) -> List[List[str]]:
+            points: List[int] = self.position[1:25]
+
+            def invert(points: List[int]) -> List[int]:
+                return list(map(lambda n: -n, points[::-1]))
+
+            if self.dice_owner == 0:
+                points = invert(points)
+
+            top: List[int] = points[12:]
+            bottom: List[int] = points[:12][::-1]
+
+            for half in (top, bottom):
+                for i, checkers in enumerate(half):
+                    row: int = 0 if half is top else 10
+                    ascii_checker: str = " X " if checkers > 0 else " O "
+                    count: int = 0
+                    while count < abs(checkers):
+                        if checkers > 5 and count == 4:
+                            board[row][i] = f" {checkers} "
+                            break
+                        else:
+                            board[row][i] = ascii_checker
+                            count += 1
+                            row += 1 if half is top else -1
+
             return board
 
-        def p0_checkers(board: List[List[str]], position: List[int]) -> List[List[str]]:
-            board = checkers(board, position[:12][::-1], True, " O ")
-            board = checkers(board, position[12:24], False, " O ")
-            return board
-
-        def p1_checkers(board: List[List[str]], position: List[int]) -> List[List[str]]:
-            board = checkers(board, position[12:24], True, " X ")
-            board = checkers(board, position[:12][::-1], False, " X ")
-            return board
-
-        board = p0_checkers(board, self.position[0 if self.dice_owner == 0 else 1])
-        board = p1_checkers(board, self.position[0 if self.dice_owner == 1 else 1])
+        board = checkers(board)
 
         # bar pos[25]
 

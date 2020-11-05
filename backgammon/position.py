@@ -56,27 +56,52 @@ def decode(position_id: str) -> str:
     return position_key
 
 
-def position_from_key(position_key: str) -> List[List[int]]:
+def position_from_key(position_key: str) -> List[int]:
     """Return an internal position from a Position Key.
 
     >>> position_from_key('00000111110011100000111110000000000011000000011111001110000011111000000000001100')
-    [[0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0], [0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]]
+    [0, -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2, 0, 0, 0]
 
     """
-    num_checkers: List[int] = [
+    checkers: List[int] = [
         sum(int(n) for n in pos) for pos in position_key.split("0")[:50]
     ]
-    position: List[List[int]] = [num_checkers[:25], num_checkers[25:]]
+
+    dice_owner_points: List[int] = checkers[:24]
+    dice_owner_bar: List[int] = [checkers[49]]
+    dice_owner_home: List[int] = [15 - sum(dice_owner_points)]
+
+    opponent_points: List[int] = checkers[25:49]
+    opponent_bar: List[int] = [checkers[24]]
+    opponent_home: List[int] = [15 - sum(opponent_points)]
+
+    merged_points: List[int] = [
+        i + j
+        for i, j in zip(dice_owner_points, list(map(lambda n: n * -1, opponent_points[::-1])))
+    ]
+
+    position: List[
+        int
+    ] = opponent_bar + merged_points + dice_owner_bar + dice_owner_home + opponent_home
+
     return position
 
 
-def key_from_position(position: List[List[int]]) -> str:
+def key_from_position(position: List[int]) -> str:
     """Return a Position Key from an internal position.
 
-    >>> key_from_position([[0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0], [0, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0]])
+    >>> key_from_position([0, -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2, 0, 0, 0])
     '00000111110011100000111110000000000011000000011111001110000011111000000000001100'
 
     """
-    num_checkers: List[int] = list(itertools.chain.from_iterable(position))
-    position_key: str = "".join(["1" * n + "0" for n in num_checkers]).ljust(80, "0")
+    dice_owner_points:List[int] = list(map(lambda n: 0 if n < 0 else n, position[1:25]))
+    dice_owner_bar: List[int] = [position[25]]
+
+    opponent_points:List[int] = list(map(lambda n: 0 if n > 0 else -n, position[1:25][::-1]))
+    opponent_bar: List[int] = [position[0]]
+
+    checkers: List[int] = dice_owner_points + dice_owner_bar + opponent_points + opponent_bar
+
+    position_key: str = "".join(["1" * n + "0" for n in checkers]).ljust(80, "0")
+
     return position_key
