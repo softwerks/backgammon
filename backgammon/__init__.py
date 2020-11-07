@@ -16,6 +16,7 @@ import enum
 from typing import List, Tuple
 
 from backgammon import position
+from backgammon.position import Position
 
 STARTING_POSITION_ID = "4HPwATDgc/ABMA"
 
@@ -32,16 +33,6 @@ ASCII_12_01 = "+12-11-10--9--8--7-------6--5--4--3--2--1-+"
 class Player(enum.IntEnum):
     ZERO = 0
     ONE = 1
-
-
-@enum.unique
-class Position(enum.IntEnum):
-    OPPONENT_BAR = 0
-    BOARD_POINTS_START = 1
-    BOARD_POINTS_END = 24
-    PLAYER_BAR = 25
-    PLAYER_HOME = 26
-    OPPONENT_HOME = 27
 
 
 class Backgammon:

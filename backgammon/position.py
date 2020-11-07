@@ -16,12 +16,28 @@
 # https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
 
 import base64
+import enum
 import itertools
 import re
 import struct
 from typing import List
 
 BYTE_LEN: int = 8
+
+
+@enum.unique
+class Position(enum.IntEnum):
+    """Indices for internal position, which is represented as a list of 28 ints.
+
+    Player's checkers are positive and opponent's are negative.
+    """
+
+    OPPONENT_BAR = 0
+    BOARD_POINTS_START = 1
+    BOARD_POINTS_END = 24
+    PLAYER_BAR = 25
+    PLAYER_HOME = 26
+    OPPONENT_HOME = 27
 
 
 def encode(position_key: str) -> str:
@@ -75,9 +91,7 @@ def position_from_key(position_key: str) -> List[int]:
     opponent_bar: List[int] = [-checkers[49]]
     opponent_home: List[int] = [15 + sum(opponent_points)]
 
-    merged_points: List[int] = [
-        i + j for i, j in zip(player_points, opponent_points)
-    ]
+    merged_points: List[int] = [i + j for i, j in zip(player_points, opponent_points)]
 
     position: List[
         int
@@ -94,18 +108,22 @@ def key_from_position(position: List[int]) -> str:
 
     """
     player_points: List[int] = list(
-        map(lambda n: 0 if n < 0 else n, position[1:25])
+        map(
+            lambda n: 0 if n < 0 else n,
+            position[Position.BOARD_POINTS_START : Position.BOARD_POINTS_END + 1],
+        )
     )
-    player_bar: List[int] = [position[25]]
+    player_bar: List[int] = [position[Position.PLAYER_BAR]]
 
     opponent_points: List[int] = list(
-        map(lambda n: 0 if n > 0 else -n, position[1:25][::-1])
+        map(
+            lambda n: 0 if n > 0 else -n,
+            position[Position.BOARD_POINTS_START : Position.BOARD_POINTS_END + 1][::-1],
+        )
     )
-    opponent_bar: List[int] = [-position[0]]
+    opponent_bar: List[int] = [-position[Position.OPPONENT_BAR]]
 
-    checkers: List[
-        int
-    ] = player_points + player_bar + opponent_points + opponent_bar
+    checkers: List[int] = player_points + player_bar + opponent_points + opponent_bar
 
     position_key: str = "".join(["1" * n + "0" for n in checkers]).ljust(80, "0")
 
