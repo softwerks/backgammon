@@ -12,70 +12,121 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import enum
 from typing import List, Tuple
 
 from backgammon import position
 
 STARTING_POSITION_ID = "4HPwATDgc/ABMA"
 
+POINTS = 24
+POINTS_PER_QUADRANT = int(POINTS / 4)
+
+ASCII_BOARD_HEIGHT = 11
+ASCII_MAX_CHECKERS = 5
+ASCII_13_24 = "+13-14-15-16-17-18------19-20-21-22-23-24-+"
+ASCII_12_01 = "+12-11-10--9--8--7-------6--5--4--3--2--1-+"
+
+
+@enum.unique
+class Player(enum.IntEnum):
+    ZERO = 0
+    ONE = 1
+
+
+@enum.unique
+class Position(enum.IntEnum):
+    OPPONENT_BAR = 0
+    BOARD_POINTS_START = 1
+    BOARD_POINTS_END = 24
+    PLAYER_BAR = 25
+    PLAYER_HOME = 26
+    OPPONENT_HOME = 27
+
 
 class Backgammon:
     def __init__(self, position_id: str = STARTING_POSITION_ID):
         position_key: str = position.decode(position_id)
         self.position: List[int] = position.position_from_key(position_key)
-        self.dice_owner: int = 0
+        self.player: Player = Player.ZERO
 
     def __str__(self):
-        def checkers(top: List[int], bottom: List[int]):
-            combined: List[List[str]] = [
-                ["   " for j in range(len(top))] for i in range(11)
+        def checkers(top: List[int], bottom: List[int]) -> List[List[str]]:
+            """Return ASCII checker matrix."""
+            ascii_checkers: List[List[str]] = [
+                ["   " for j in range(len(top))] for i in range(ASCII_BOARD_HEIGHT)
             ]
+
             for half in (top, bottom):
-                for i, checkers in enumerate(half):
-                    row: int = 0 if half is top else 10
-                    ascii_checker: str = " X " if checkers > 0 else " O "
-                    count: int = 0
-                    while count < abs(checkers):
-                        if checkers > 5 and count == 4:
-                            combined[row][i] = f" {checkers} "
+                for col, num_checkers in enumerate(half):
+                    row: int = 0 if half is top else len(ascii_checkers) - 1
+                    for i in range(abs(num_checkers)):
+                        if (
+                            abs(num_checkers) > ASCII_MAX_CHECKERS
+                            and i == ASCII_MAX_CHECKERS - 1
+                        ):
+                            ascii_checkers[row][col] = f" {abs(num_checkers)} "
                             break
-                        else:
-                            combined[row][i] = ascii_checker
-                            count += 1
-                            row += 1 if half is top else -1
-            return combined
+                        ascii_checkers[row][col] = " O " if num_checkers > 0 else " X "
+                        row += 1 if half is top else -1
 
-        def split_position(position: List[int]) -> Tuple[List[int], List[int]]:
-            def invert(position: List[int]) -> List[int]:
-                return list(map(lambda n: -n, position[::-1]))
+            return ascii_checkers
 
-            if self.dice_owner == 0:
-                position = invert(position)
+        def split(position: List[int]) -> Tuple[List[int], List[int]]:
+            """Return a position split into top (Player.ZERO 12-1) and bottom (Player.ZERO 13-24) halves."""
+
+            def normalize(position: List[int]) -> List[int]:
+                """Return position for Player.ZERO"""
+                if self.player is Player.ONE:
+                    position = list(map(lambda n: -n, position[::-1]))
+                return position
+
+            position = normalize(position)
 
             half_len: int = int(len(position) / 2)
-            top: List[int] = position[half_len:]
-            bottom: List[int] = position[:half_len][::-1]
+            top: List[int] = position[:half_len][::-1]
+            bottom: List[int] = position[half_len:]
 
             return top, bottom
 
-        board: List[List[str]] = checkers(*split_position(self.position[1:25]))
+        points: List[List[str]] = checkers(
+            *split(
+                self.position[
+                    Position.BOARD_POINTS_START : Position.BOARD_POINTS_END + 1
+                ]
+            )
+        )
+
         bar: List[List[str]] = checkers(
-            *split_position([self.position[25], self.position[0]])
+            *split(
+                [
+                    self.position[Position.PLAYER_BAR],
+                    self.position[Position.OPPONENT_BAR],
+                ]
+            )
         )
 
         ascii_board: str = ""
         position_id: str = position.encode(position.key_from_position(self.position))
         ascii_board += f"Position ID: {position_id}\n"
-        ascii_board += " +13-14-15-16-17-18------19-20-21-22-23-24-+\n"
-        for i in range(len(board)):
-            ascii_board += ("^|" if self.dice_owner == 0 else "v|") if i == 5 else " |"
-            ascii_board += "".join(board[i][:6])
+        ascii_board += (
+            " " + (ASCII_12_01 if self.player is Player.ZERO else ASCII_13_24) + "\n"
+        )
+        for i in range(len(points)):
+            ascii_board += (
+                ("^|" if self.player == 0 else "v|")
+                if i == int(ASCII_BOARD_HEIGHT / 2)
+                else " |"
+            )
+            ascii_board += "".join(points[i][:POINTS_PER_QUADRANT])
             ascii_board += "|"
-            ascii_board += "BAR" if i == 5 else bar[i][0]
+            ascii_board += "BAR" if i == int(ASCII_BOARD_HEIGHT / 2) else bar[i][0]
             ascii_board += "|"
-            ascii_board += "".join(board[i][6:])
+            ascii_board += "".join(points[i][POINTS_PER_QUADRANT:])
             ascii_board += "|"
             ascii_board += "\n"
-        ascii_board += " +12-11-10--9--8--7-------6--5--4--3--2--1-+\n"
+        ascii_board += (
+            " " + (ASCII_13_24 if self.player is Player.ZERO else ASCII_12_01) + "\n"
+        )
 
         return ascii_board
