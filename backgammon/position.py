@@ -67,21 +67,21 @@ def position_from_key(position_key: str) -> List[int]:
         sum(int(n) for n in pos) for pos in position_key.split("0")[:50]
     ]
 
-    dice_owner_points: List[int] = checkers[:24]
-    dice_owner_bar: List[int] = [checkers[24]]
-    dice_owner_home: List[int] = [15 - sum(dice_owner_points)]
+    player_points: List[int] = checkers[:24]
+    player_bar: List[int] = [checkers[24]]
+    player_home: List[int] = [15 - sum(player_points)]
 
     opponent_points: List[int] = list(map(lambda n: -n, checkers[25:49][::-1]))
     opponent_bar: List[int] = [-checkers[49]]
     opponent_home: List[int] = [15 + sum(opponent_points)]
 
     merged_points: List[int] = [
-        i + j for i, j in zip(dice_owner_points, opponent_points)
+        i + j for i, j in zip(player_points, opponent_points)
     ]
 
     position: List[
         int
-    ] = opponent_bar + merged_points + dice_owner_bar + dice_owner_home + opponent_home
+    ] = opponent_bar + merged_points + player_bar + player_home + opponent_home
 
     return position
 
@@ -93,10 +93,10 @@ def key_from_position(position: List[int]) -> str:
     '00000111110011100000111110000000000011000000011111001110000011111000000000001100'
 
     """
-    dice_owner_points: List[int] = list(
+    player_points: List[int] = list(
         map(lambda n: 0 if n < 0 else n, position[1:25])
     )
-    dice_owner_bar: List[int] = [position[25]]
+    player_bar: List[int] = [position[25]]
 
     opponent_points: List[int] = list(
         map(lambda n: 0 if n > 0 else -n, position[1:25][::-1])
@@ -105,7 +105,7 @@ def key_from_position(position: List[int]) -> str:
 
     checkers: List[
         int
-    ] = dice_owner_points + dice_owner_bar + opponent_points + opponent_bar
+    ] = player_points + player_bar + opponent_points + opponent_bar
 
     position_key: str = "".join(["1" * n + "0" for n in checkers]).ljust(80, "0")
 
