@@ -50,9 +50,13 @@ class Backgammon:
         self.position: List[int] = position.position_from_key(position_key)
         self.player: Player = Player.ZERO
 
+    def __repr__(self):
+        position_id: str = position.encode(position.key_from_position(self.position))
+        return f"{__name__}.{self.__class__.__name__}('{position_id}')"
+
     def __str__(self):
         def checkers(top: List[int], bottom: List[int]) -> List[List[str]]:
-            """Return ASCII checker matrix."""
+            """Return an ASCII checker matrix."""
             ascii_checkers: List[List[str]] = [
                 ["   " for j in range(len(top))] for i in range(ASCII_BOARD_HEIGHT)
             ]
