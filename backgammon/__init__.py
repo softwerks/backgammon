@@ -15,6 +15,7 @@
 import enum
 from typing import List, Tuple
 
+from backgammon import match
 from backgammon import position
 from backgammon.position import Position
 
