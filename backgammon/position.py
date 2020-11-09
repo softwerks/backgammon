@@ -12,119 +12,111 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Based on GNU Backgammon Position ID
-# https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
-
 import base64
+from dataclasses import dataclass
 import enum
 import itertools
 import re
 import struct
-from typing import List
-
-BYTE_LEN: int = 8
+from typing import List, Tuple
 
 
-@enum.unique
-class Position(enum.IntEnum):
-    """Indices for internal position, which is represented as a list of 28 ints.
-
-    Player's checkers are positive and opponent's are negative.
-    """
-
-    OPPONENT_BAR = 0
-    BOARD_POINTS_START = 1
-    BOARD_POINTS_END = 24
-    PLAYER_BAR = 25
-    PLAYER_HOME = 26
-    OPPONENT_HOME = 27
+@dataclass
+class Position:
+    board_points: List[int]
+    player_bar: int
+    player_home: int
+    opponent_bar: int
+    opponent_home: int
 
 
-def encode(position_key: str) -> str:
-    """Encode a binary Position Key and return a Position ID.
+def decode(position_id: str) -> Position:
+    """Decode a position ID and return a Position.
 
-    >>> encode('00000111110011100000111110000000000011000000011111001110000011111000000000001100')
-    '4HPwATDgc/ABMA'
-
-    """
-    assert len(position_key) == 80, "Position Key must be exactly 80 characters."
-    assert (
-        re.match("^[01]+$", position_key) is not None
-    ), "Position Key may only contain 0s and 1s."
-
-    byte_array: List[str] = [
-        position_key[i : i + BYTE_LEN] for i in range(0, len(position_key), BYTE_LEN)
-    ]
-    packed_bytes: bytes = struct.pack("10B", *[int(b[::-1], 2) for b in byte_array])
-    b64: bytes = base64.b64encode(packed_bytes)
-    return b64.decode()[:-2]
-
-
-def decode(position_id: str) -> str:
-    """Decode a Position ID and return a binary Position Key.
+    https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
 
     >>> decode('4HPwATDgc/ABMA')
-    '00000111110011100000111110000000000011000000011111001110000011111000000000001100'
+    Position(board_points=[-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2], player_bar=0, player_home=0, opponent_bar=0, opponent_home=0)
     """
-    b64: str = position_id + "=="
-    packed_bytes: bytes = base64.b64decode(b64)
-    position_key: str = "".join([format(b, "08b")[::-1] for b in packed_bytes])
-    return position_key
 
+    def key_from_id(position_id: str) -> str:
+        """Decode the the position ID and return the key (bit string)."""
+        position_bytes: bytes = base64.b64decode(position_id + "==")
+        position_key: str = "".join([format(b, "08b")[::-1] for b in position_bytes])
+        return position_key
 
-def position_from_key(position_key: str) -> List[int]:
-    """Return an internal position from a Position Key.
+    def checkers_from_key(position_key: str) -> List[int]:
+        """Return a list of checkers."""
+        return [sum(int(n) for n in pos) for pos in position_key.split("0")[:50]]
 
-    >>> position_from_key('00000111110011100000111110000000000011000000011111001110000011111000000000001100')
-    [0, -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2, 0, 0, 0]
+    def merge_points(player: List[int], opponent: List[int]) -> List[int]:
+        """Merge player and opponent board positions and return the combined list."""
+        return [i + j for i, j in zip(player, list(map(lambda n: -n, opponent[::-1])))]
 
-    """
-    checkers: List[int] = [
-        sum(int(n) for n in pos) for pos in position_key.split("0")[:50]
-    ]
+    position_key: str = key_from_id(position_id)
+
+    checkers: List[int] = checkers_from_key(position_key)
 
     player_points: List[int] = checkers[:24]
-    player_bar: List[int] = [checkers[24]]
-    player_home: List[int] = [15 - sum(player_points)]
+    opponent_points: List[int] = checkers[25:49]
+    board_points: List[int] = merge_points(player_points, opponent_points)
 
-    opponent_points: List[int] = list(map(lambda n: -n, checkers[25:49][::-1]))
-    opponent_bar: List[int] = [-checkers[49]]
-    opponent_home: List[int] = [15 + sum(opponent_points)]
+    player_bar: int = checkers[24]
+    player_home: int = abs(15 - sum(player_points))
 
-    merged_points: List[int] = [i + j for i, j in zip(player_points, opponent_points)]
+    opponent_bar: int = -checkers[49]
+    opponent_home: int = -abs(15 - sum(player_points))
 
-    position: List[
-        int
-    ] = opponent_bar + merged_points + player_bar + player_home + opponent_home
+    position: Position = Position(
+        board_points=board_points,
+        player_bar=player_bar,
+        player_home=player_home,
+        opponent_bar=opponent_bar,
+        opponent_home=opponent_home,
+    )
 
     return position
 
 
-def key_from_position(position: List[int]) -> str:
-    """Return a Position Key from an internal position.
+def encode(position: Position) -> str:
+    """Encode a Position and return a position ID.
 
-    >>> key_from_position([0, -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2, 0, 0, 0])
-    '00000111110011100000111110000000000011000000011111001110000011111000000000001100'
+    https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
+
+    >>> encode(Position(board_points=[-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2], player_bar=0, player_home=0, opponent_bar=0, opponent_home=0))
+    '4HPwATDgc/ABMA'
 
     """
-    player_points: List[int] = list(
-        map(
-            lambda n: 0 if n < 0 else n,
-            position[Position.BOARD_POINTS_START : Position.BOARD_POINTS_END + 1],
+
+    def unmerge_points(position: Position) -> Tuple[List[int], List[int]]:
+        """Return player and opponent board positions starting from their respective ace points."""
+        player: List[int] = list(
+            map(lambda n: 0 if n < 0 else n, position.board_points,)
         )
-    )
-    player_bar: List[int] = [position[Position.PLAYER_BAR]]
-
-    opponent_points: List[int] = list(
-        map(
-            lambda n: 0 if n > 0 else -n,
-            position[Position.BOARD_POINTS_START : Position.BOARD_POINTS_END + 1][::-1],
+        opponent: List[int] = list(
+            map(lambda n: 0 if n > 0 else -n, position.board_points[::-1],)
         )
-    )
-    opponent_bar: List[int] = [-position[Position.OPPONENT_BAR]]
+        return player, opponent
 
-    checkers: List[int] = player_points + player_bar + opponent_points + opponent_bar
+    def key_from_checkers(checkers: List[int]) -> str:
+        """Return a position key (bit string)."""
+        return "".join(["1" * n + "0" for n in checkers]).ljust(80, "0")
 
-    position_key: str = "".join(["1" * n + "0" for n in checkers]).ljust(80, "0")
+    def id_from_key(position_key: str) -> str:
+        """Encode the position key and return the ID."""
+        byte_strings: List[str] = [
+            position_key[i : i + 8][::-1] for i in range(0, len(position_key), 8)
+        ]
+        position_bytes: bytes = struct.pack("10B", *[int(b, 2) for b in byte_strings])
+        return base64.b64encode(position_bytes).decode()[:-2]
 
-    return position_key
+    player_points, opponent_points = unmerge_points(position)
+    checkers: List[int] = player_points + [position.player_bar] + opponent_points + [
+        position.opponent_bar
+    ]
+
+    position_key: str = key_from_checkers(checkers)
+
+    position_id: str = id_from_key(position_key)
+
+    return position_id

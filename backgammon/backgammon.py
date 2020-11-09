@@ -15,10 +15,13 @@
 import enum
 from typing import List, Tuple
 
+from backgammon import match
+from backgammon.match import Match, Player
 from backgammon import position
 from backgammon.position import Position
 
 STARTING_POSITION_ID = "4HPwATDgc/ABMA"
+STARTING_MATCH_ID = "cAgAAAAAAAAA"
 
 POINTS = 24
 POINTS_PER_QUADRANT = int(POINTS / 4)
@@ -29,21 +32,15 @@ ASCII_13_24 = "+13-14-15-16-17-18------19-20-21-22-23-24-+"
 ASCII_12_01 = "+12-11-10--9--8--7-------6--5--4--3--2--1-+"
 
 
-@enum.unique
-class Player(enum.IntEnum):
-    ZERO = 0
-    ONE = 1
-
-
 class Backgammon:
-    def __init__(self, position_id: str = STARTING_POSITION_ID):
-        position_key: str = position.decode(position_id)
-        self.position: List[int] = position.position_from_key(position_key)
-        self.player: Player = Player.ZERO
+    def __init__(self, position_id: str = STARTING_POSITION_ID, match_id: str = STARTING_MATCH_ID):
+        self.position: Position = position.decode(position_id)
+        self.match: Match = match.decode(match_id)
 
     def __repr__(self):
-        position_id: str = position.encode(position.key_from_position(self.position))
-        return f"{__name__}.{self.__class__.__name__}('{position_id}')"
+        position_id: str = position.encode(self.position)
+        match_id: str = match.encode(self.match)
+        return f"{__name__}.{self.__class__.__name__}('{position_id}', '{match_id}')"
 
     def __str__(self):
         def checkers(top: List[int], bottom: List[int]) -> List[List[str]]:
@@ -72,7 +69,7 @@ class Backgammon:
 
             def normalize(position: List[int]) -> List[int]:
                 """Return position for Player.ZERO"""
-                if self.player is Player.ONE:
+                if self.match.player is Player.ONE:
                     position = list(map(lambda n: -n, position[::-1]))
                 return position
 
@@ -84,32 +81,28 @@ class Backgammon:
 
             return top, bottom
 
-        points: List[List[str]] = checkers(
-            *split(
-                self.position[
-                    Position.BOARD_POINTS_START : Position.BOARD_POINTS_END + 1
-                ]
-            )
-        )
+        points: List[List[str]] = checkers(*split(self.position.board_points))
 
         bar: List[List[str]] = checkers(
             *split(
                 [
-                    self.position[Position.PLAYER_BAR],
-                    self.position[Position.OPPONENT_BAR],
+                    self.position.player_bar,
+                    self.position.opponent_bar,
                 ]
             )
         )
 
         ascii_board: str = ""
-        position_id: str = position.encode(position.key_from_position(self.position))
-        ascii_board += f"Position ID: {position_id}\n"
+        position_id: str = position.encode(self.position)
+        ascii_board += f"                 Position ID: {position_id}\n"
+        match_id: str = match.encode(self.match)
+        ascii_board += f"                 Match ID   : {match_id}\n"
         ascii_board += (
-            " " + (ASCII_12_01 if self.player is Player.ZERO else ASCII_13_24) + "\n"
+            " " + (ASCII_12_01 if self.match.player is Player.ZERO else ASCII_13_24) + "\n"
         )
         for i in range(len(points)):
             ascii_board += (
-                ("^|" if self.player == 0 else "v|")
+                ("^|" if self.match.player == 0 else "v|")
                 if i == int(ASCII_BOARD_HEIGHT / 2)
                 else " |"
             )
@@ -121,7 +114,7 @@ class Backgammon:
             ascii_board += "|"
             ascii_board += "\n"
         ascii_board += (
-            " " + (ASCII_13_24 if self.player is Player.ZERO else ASCII_12_01) + "\n"
+            " " + (ASCII_13_24 if self.match.player is Player.ZERO else ASCII_12_01) + "\n"
         )
 
         return ascii_board
