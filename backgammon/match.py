@@ -112,7 +112,7 @@ def decode(match_id: str) -> Match:
 
 
 def encode(match: Match) -> str:
-    """Encode a match and return a match ID.
+    """Encode a Match and return a match ID.
 
     >>> encode(Match(cube_value=2, cube_holder=Player.ZERO, player=Player.ONE, crawford=False, game_state=GameState.PLAYING, turn=Player.ONE, double=False, resign=Resign.NONE, dice_1=5, dice_2=2, length=9, player_0_score=2, player_1_score=4))
     'QYkqASAAIAAA'
