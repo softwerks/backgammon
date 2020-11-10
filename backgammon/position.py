@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Position ID
+# https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
+# Official documentation is inaccurate. Position key (binary string) starts from the opponent's ace point. See:
+# https://lists.gnu.org/archive/html/bug-gnubg/2005-01/msg00081.html
+# https://lists.gnu.org/archive/html/bug-gnubg/2013-01/msg00010.html
+
 import base64
 from dataclasses import dataclass
 import enum
@@ -32,8 +38,6 @@ class Position:
 
 def decode(position_id: str) -> Position:
     """Decode a position ID and return a Position.
-
-    https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
 
     >>> decode('4HPwATDgc/ABMA')
     Position(board_points=[-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2], player_bar=0, player_home=0, opponent_bar=0, opponent_home=0)
@@ -57,15 +61,15 @@ def decode(position_id: str) -> Position:
 
     checkers: List[int] = checkers_from_key(position_key)
 
-    player_points: List[int] = checkers[:24]
-    opponent_points: List[int] = checkers[25:49]
+    player_points: List[int] = checkers[25:49]
+    opponent_points: List[int] = checkers[:24]
     board_points: List[int] = merge_points(player_points, opponent_points)
 
-    player_bar: int = checkers[24]
+    player_bar: int = checkers[49]
     player_home: int = abs(15 - sum(player_points))
 
-    opponent_bar: int = -checkers[49]
-    opponent_home: int = -abs(15 - sum(player_points))
+    opponent_bar: int = -checkers[24]
+    opponent_home: int = -abs(15 - sum(opponent_points))
 
     position: Position = Position(
         board_points=board_points,
@@ -80,8 +84,6 @@ def decode(position_id: str) -> Position:
 
 def encode(position: Position) -> str:
     """Encode a Position and return a position ID.
-
-    https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Position-ID.html
 
     >>> encode(Position(board_points=[-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2], player_bar=0, player_home=0, opponent_bar=0, opponent_home=0))
     '4HPwATDgc/ABMA'
@@ -111,8 +113,8 @@ def encode(position: Position) -> str:
         return base64.b64encode(position_bytes).decode()[:-2]
 
     player_points, opponent_points = unmerge_points(position)
-    checkers: List[int] = player_points + [position.player_bar] + opponent_points + [
-        position.opponent_bar
+    checkers: List[int] = opponent_points + [position.opponent_bar] + player_points + [
+        position.player_bar
     ]
 
     position_key: str = key_from_checkers(checkers)
