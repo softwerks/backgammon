@@ -33,7 +33,9 @@ ASCII_12_01 = "+12-11-10--9--8--7-------6--5--4--3--2--1-+"
 
 
 class Backgammon:
-    def __init__(self, position_id: str = STARTING_POSITION_ID, match_id: str = STARTING_MATCH_ID):
+    def __init__(
+        self, position_id: str = STARTING_POSITION_ID, match_id: str = STARTING_MATCH_ID
+    ):
         self.position: Position = position.decode(position_id)
         self.match: Match = match.decode(match_id)
 
@@ -84,12 +86,7 @@ class Backgammon:
         points: List[List[str]] = checkers(*split(self.position.board_points))
 
         bar: List[List[str]] = checkers(
-            *split(
-                [
-                    self.position.player_bar,
-                    self.position.opponent_bar,
-                ]
-            )
+            *split([self.position.player_bar, self.position.opponent_bar,])
         )
 
         ascii_board: str = ""
@@ -98,7 +95,9 @@ class Backgammon:
         match_id: str = match.encode(self.match)
         ascii_board += f"                 Match ID   : {match_id}\n"
         ascii_board += (
-            " " + (ASCII_12_01 if self.match.player is Player.ZERO else ASCII_13_24) + "\n"
+            " "
+            + (ASCII_12_01 if self.match.player is Player.ZERO else ASCII_13_24)
+            + "\n"
         )
         for i in range(len(points)):
             ascii_board += (
@@ -114,7 +113,9 @@ class Backgammon:
             ascii_board += "|"
             ascii_board += "\n"
         ascii_board += (
-            " " + (ASCII_13_24 if self.match.player is Player.ZERO else ASCII_12_01) + "\n"
+            " "
+            + (ASCII_13_24 if self.match.player is Player.ZERO else ASCII_12_01)
+            + "\n"
         )
 
         return ascii_board
