@@ -131,7 +131,7 @@ def decode(position_id: str) -> Position:
 def encode(position: Position) -> str:
     """Encode a Position and return a position ID.
 
-    >>> encode(Position(board_points=[-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2], player_bar=0, player_off=0, opponent_bar=0, opponent_off=0))
+    >>> encode(Position(board_points=(-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2), player_bar=0, player_off=0, opponent_bar=0, opponent_off=0))
     '4HPwATDgc/ABMA'
 
     """
