@@ -24,10 +24,6 @@ import struct
 from typing import List, Optional, Tuple
 
 
-class InvalidMoveError(Exception):
-    pass
-
-
 @dataclasses.dataclass
 class Position:
     board_points: Tuple[int, ...]
