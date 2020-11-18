@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import enum
+import functools
 from typing import List, Optional, Tuple, Set
 
 from backgammon import match
@@ -100,12 +101,13 @@ class Backgammon:
                     return try_default(pos, source, pips)
             return None
 
+        @functools.lru_cache()
         def generate(
-            pos: position.Position,
-            dice: Tuple[int, ...],
-            plays: List[position.Position],
-        ) -> None:
+            pos: position.Position, dice: Tuple[int, ...]
+        ) -> List[position.Position]:
             """Generate legal plays."""
+            plays: List[position.Position] = []
+
             if dice:
                 pips: int = dice[0]
 
@@ -116,26 +118,29 @@ class Backgammon:
                     for source in range(POINTS, 0, -1):
                         new_pos = try_default(pos, source, pips)
                         if new_pos:
-                            generate(new_pos, dice[1:], plays)
+                            plays.extend(generate(new_pos, dice[1:]))
                 elif move_state is MoveState.ENTER_FROM_BAR:
                     new_pos = try_enter_from_bar(pos, pips)
                     if new_pos:
-                        generate(new_pos, dice[1:], plays)
+                        plays.extend(generate(new_pos, dice[1:]))
                 elif move_state is MoveState.BEAR_OFF:
                     for source in range(POINTS_PER_QUADRANT, 0, -1):
                         new_pos = try_bear_off(pos, source, pips)
                         if new_pos:
-                            generate(new_pos, dice[1:], plays)
+                            plays.extend(generate(new_pos, dice[1:]))
             else:
                 plays.append(pos)
+
+            return plays
 
         doubles: bool = self.match.dice[0] == self.match.dice[1]
         dice: Tuple[int, ...] = self.match.dice * 2 if doubles else self.match.dice
 
-        plays: List[position.Position] = []
-        generate(self.position, dice, plays)
+        plays: List[position.Position] = generate(self.position, dice)
         if not doubles:
-            generate(self.position, tuple(reversed(dice)), plays)
+            plays += generate(self.position, tuple(reversed(dice)))
+
+        # print(generate.cache_info())
 
         return set(plays)
 

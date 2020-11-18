@@ -59,6 +59,8 @@ def apply_move(
         board_points[source - 1] -= 1
         player_off += 1
 
+    # fix me
+
     board_points: List[int] = list(position.board_points)
     player_bar: int = position.player_bar
     player_off: int = position.player_off
