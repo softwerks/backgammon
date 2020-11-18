@@ -48,87 +48,104 @@ class Backgammon:
         self.position: position.Position = position.decode(position_id)
         self.match: match.Match = match.decode(match_id)
 
-    def generate_plays(self) -> None:
-        """Return a set of positions for all legal plays."""
+    def generate_plays(self) -> Set[position.Position]:
+        """Generate legal plays and return a set of the corresponding positions."""
 
-        def checker_on_point(position: position.Position, point: int) -> bool:
-            """Return True if the player has one or more checkers on the point."""
-            return position.board_points[point - 1] > 0
+        def get_player_home(pos: position.Position) -> Tuple[int, ...]:
+            """Return a sequence of the player's checkers in their home board."""
+            home_board: Tuple[int, ...] = pos.board_points[:POINTS_PER_QUADRANT]
+            return tuple(point if point > 0 else 0 for point in home_board)
 
-        def point_is_open(position: position.Position, destination: int) -> bool:
-            """Return True if the opponent isn't blocking the point."""
-            return position.board_points[destination - 1] > -2
-
-        def player_home(position: position.Position) -> Tuple[int, ...]:
-            """Returns a sequence of the player's checkers in their home board."""
-            home_board: Tuple[int, ...] = position.board_points[:POINTS_PER_QUADRANT]
-            return tuple(n if n > 0 else 0 for n in home_board)
-
-        def can_move(
-            position: position.Position, move_type: MoveState, point: int, pips: int
-        ) -> Tuple[bool, Optional[int], Optional[int]]:
-            """Determine if the checker can move the pips and return the source and destination points."""
-            destination: int = point - pips
-            if move_type is MoveState.BEAR_OFF:
-                checkers_on_higher_points: int = sum(player_home(position)[point:])
-                if destination < 1 and not checkers_on_higher_points:
-                    return True, point, None
-                elif point_is_open(position, destination):
-                    return True, point, destination
-            elif move_type is MoveState.ENTER_FROM_BAR:
-                if point_is_open(position, pips):
-                    return True, None, pips
+        def get_move_state(pos: position.Position) -> MoveState:
+            """Return the move state, which determines the types of moves allowed."""
+            move_state: MoveState = MoveState.DEFAULT
+            if pos.player_bar > 0:
+                move_state = MoveState.ENTER_FROM_BAR
             else:
-                if destination > 0 and point_is_open(position, destination):
-                    return True, point, destination
-            return False, None, None
+                player_home: int = sum(get_player_home(pos))
+                if player_home + pos.player_off == CHECKERS:
+                    move_state = MoveState.BEAR_OFF
+            return move_state
 
-        def get_move_state(position: position.Position) -> MoveState:
-            """Returns the type of move allowed."""
-            if sum(player_home(position)) + position.player_off == CHECKERS:
-                return MoveState.BEAR_OFF
-            elif position.player_bar > 0:
-                return MoveState.ENTER_FROM_BAR
+        def try_default(
+            pos: position.Position, source: int, pips: int
+        ) -> Optional[position.Position]:
+            """Try to move a checker from one point to another and return the new position."""
+            if pos.board_points[source - 1] > 0:
+                destination: int = source - pips
+                if destination > 0 and pos.board_points[destination - 1] > -2:
+                    return position.apply_move(pos, source, destination)
+            return None
+
+        def try_enter_from_bar(
+            pos: position.Position, destination: int, pips: int
+        ) -> Optional[position.Position]:
+            """Try to move a checker from the bar to a point and return the new position."""
+            if pos.board_points[destination - 1] > -2:
+                return position.apply_move(pos, None, destination)
+            return None
+
+        def try_bear_off(
+            pos: position.Position, source: int, pips: int
+        ) -> Optional[position.Position]:
+            """Try to bear off a checker or move a checker from one point to another and return the new position."""
+            if pos.board_points[source - 1] > 0:
+                destination: int = source - pips
+                if destination < 1:
+                    higher_points: int = sum(get_player_home(pos)[:source])
+                    if higher_points == 0:
+                        return position.apply_move(pos, source, None)
+                else:
+                    return try_default(pos, source, pips)
+            return None
+
+        def generate(
+            pos: position.Position,
+            dice: Tuple[int, ...],
+            plays: List[position.Position],
+        ) -> None:
+            """Generate legal plays."""
+            if dice:
+                pips: int = dice[0]
+
+                move_state: MoveState = get_move_state(pos)
+
+                new_pos: Optional[position.Position] = None
+                if move_state is MoveState.DEFAULT:
+                    for source in range(POINTS, 0, -1):
+                        new_pos = try_default(pos, source, pips)
+                        if new_pos:
+                            generate(new_pos, dice[1:], plays)
+                elif move_state is MoveState.ENTER_FROM_BAR:
+                    for destination in range(POINTS, POINTS - POINTS_PER_QUADRANT, -1):
+                        new_pos = try_enter_from_bar(pos, destination, pips)
+                        if new_pos:
+                            generate(new_pos, dice[1:], plays)
+                elif move_state is MoveState.BEAR_OFF:
+                    for source in range(POINTS_PER_QUADRANT, 0, -1):
+                        new_pos = try_bear_off(pos, source, pips)
+                        if new_pos:
+                            generate(new_pos, dice[1:], plays)
             else:
-                return MoveState.DEFAULT
-
-        def generate_moves(pos: position.Position, dice: Tuple[int, ...]) -> None:
-            """Generate all legal moves."""
-            pips: int = dice[0]
-            move_state: MoveState = get_move_state(pos)
-            for point in range(POINTS, 0, -1):
-                if checker_on_point(pos, point):
-                    move_is_valid, source, destination = can_move(
-                        pos, move_state, point, pips
-                    )
-                    if move_is_valid:
-                        print(
-                            f"{move_state} pips: {pips}, source: {source}, destination: {destination}"
-                        )
-                        next_position: position.Position = position.apply_move(
-                            pos, source, destination
-                        )
-                        if len(dice) > 1:
-                            generate_moves(next_position, dice[1:])
+                plays.append(pos)
 
         doubles: bool = self.match.dice[0] == self.match.dice[1]
         dice: Tuple[int, ...] = self.match.dice * 2 if doubles else self.match.dice
 
-        generate_moves(self.position, dice)
+        plays: List[position.Position] = []
+        generate(self.position, dice, plays)
         if not doubles:
-            generate_moves(self.position, tuple(reversed(dice)))
+            generate(self.position, tuple(reversed(dice)), plays)
 
-        # trim shorter plays
+        return set(plays)
 
-        # return plays
-
-    def play(self, moves: List[Tuple[Optional[int], Optional[int]]]) -> None:
-        """Excecute a play (i.e. a list of moves)."""
+    def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]]]) -> None:
+        """Excecute a play, a sequence of moves."""
         new_position: position.Position = self.position
         for source, destination in moves:
             new_position = position.apply_move(new_position, source, destination)
 
-        legal_positions: Set[position.Position] = set()
+        legal_positions: Set[position.Position] = self.generate_plays()
 
         if new_position in legal_positions:
             self.position = new_position
