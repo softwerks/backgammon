@@ -24,7 +24,7 @@ import struct
 from typing import List, Optional, Tuple
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Position:
     board_points: Tuple[int, ...]
     player_bar: int
