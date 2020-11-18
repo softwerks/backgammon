@@ -78,9 +78,10 @@ class Backgammon:
             return None
 
         def try_enter_from_bar(
-            pos: position.Position, destination: int, pips: int
+            pos: position.Position, pips: int
         ) -> Optional[position.Position]:
             """Try to move a checker from the bar to a point and return the new position."""
+            destination: int = POINTS - (pips - 1)
             if pos.board_points[destination - 1] > -2:
                 return position.apply_move(pos, None, destination)
             return None
@@ -117,10 +118,9 @@ class Backgammon:
                         if new_pos:
                             generate(new_pos, dice[1:], plays)
                 elif move_state is MoveState.ENTER_FROM_BAR:
-                    for destination in range(POINTS, POINTS - POINTS_PER_QUADRANT, -1):
-                        new_pos = try_enter_from_bar(pos, destination, pips)
-                        if new_pos:
-                            generate(new_pos, dice[1:], plays)
+                    new_pos = try_enter_from_bar(pos, pips)
+                    if new_pos:
+                        generate(new_pos, dice[1:], plays)
                 elif move_state is MoveState.BEAR_OFF:
                     for source in range(POINTS_PER_QUADRANT, 0, -1):
                         new_pos = try_bear_off(pos, source, pips)
