@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import enum
-import functools
-from typing import List, Optional, Tuple, Set
+import itertools
+import operator
+from typing import Callable, List, Optional, Tuple, Set
 
 from backgammon import match
 from backgammon import position
@@ -49,7 +50,7 @@ class Backgammon:
         self.position: position.Position = position.decode(position_id)
         self.match: match.Match = match.decode(match_id)
 
-    def generate_plays(self) -> Set[position.Position]:
+    def generate_plays(self) -> List[position.Play]:
         """Generate legal plays and return a set of the corresponding positions."""
 
         def get_player_home(pos: position.Position) -> Tuple[int, ...]:
@@ -70,89 +71,134 @@ class Backgammon:
 
         def try_default(
             pos: position.Position, source: int, pips: int
-        ) -> Optional[position.Position]:
-            """Try to move a checker from one point to another and return the new position."""
+        ) -> Optional[position.Move]:
+            """Try to move a checker from one point to another and return the move if valid."""
             if pos.board_points[source - 1] > 0:
                 destination: int = source - pips
                 if destination > 0 and pos.board_points[destination - 1] > -2:
-                    return position.apply_move(pos, source, destination)
+                    return position.Move(pips, source, destination)
             return None
 
         def try_enter_from_bar(
             pos: position.Position, pips: int
-        ) -> Optional[position.Position]:
-            """Try to move a checker from the bar to a point and return the new position."""
+        ) -> Optional[position.Move]:
+            """Try to move a checker from the bar to a point and return the move if valid."""
             destination: int = POINTS - (pips - 1)
             if pos.board_points[destination - 1] > -2:
-                return position.apply_move(pos, None, destination)
+                return position.Move(pips, None, destination)
             return None
 
         def try_bear_off(
             pos: position.Position, source: int, pips: int
-        ) -> Optional[position.Position]:
-            """Try to bear off a checker or move a checker from one point to another and return the new position."""
+        ) -> Optional[position.Move]:
+            """Try to bear off a checker or move a checker from one point to another and return the move if valid."""
             if pos.board_points[source - 1] > 0:
                 destination: int = source - pips
                 if destination < 1:
                     higher_points: int = sum(get_player_home(pos)[:source])
                     if higher_points == 0:
-                        return position.apply_move(pos, source, None)
+                        return position.Move(pips, source, None)
                 else:
                     return try_default(pos, source, pips)
             return None
 
-        @functools.lru_cache()
         def generate(
-            pos: position.Position, dice: Tuple[int, ...]
-        ) -> List[position.Position]:
+            pos: position.Position,
+            dice: Tuple[int, ...],
+            moves: List[position.Move],
+            plays: List[position.Play],
+        ) -> List[position.Play]:
             """Generate legal plays."""
-            plays: List[position.Position] = []
-
             if dice:
                 pips: int = dice[0]
 
                 move_state: MoveState = get_move_state(pos)
 
-                new_pos: Optional[position.Position] = None
+                move: Optional[position.Move] = None
                 if move_state is MoveState.DEFAULT:
                     for source in range(POINTS, 0, -1):
-                        new_pos = try_default(pos, source, pips)
-                        if new_pos:
-                            plays.extend(generate(new_pos, dice[1:]))
+                        move = try_default(pos, source, pips)
+                        if move:
+                            generate(
+                                position.apply_move(pos, move),
+                                dice[1:],
+                                moves + [move],
+                                plays,
+                            )
                 elif move_state is MoveState.ENTER_FROM_BAR:
-                    new_pos = try_enter_from_bar(pos, pips)
-                    if new_pos:
-                        plays.extend(generate(new_pos, dice[1:]))
+                    move = try_enter_from_bar(pos, pips)
+                    if move:
+                        generate(
+                            position.apply_move(pos, move),
+                            dice[1:],
+                            moves + [move],
+                            plays,
+                        )
                 elif move_state is MoveState.BEAR_OFF:
                     for source in range(POINTS_PER_QUADRANT, 0, -1):
-                        new_pos = try_bear_off(pos, source, pips)
-                        if new_pos:
-                            plays.extend(generate(new_pos, dice[1:]))
+                        move = try_bear_off(pos, source, pips)
+                        if move:
+                            generate(
+                                position.apply_move(pos, move),
+                                dice[1:],
+                                moves + [move],
+                                plays,
+                            )
             else:
-                plays.append(pos)
-
+                plays.append(position.Play(tuple(moves), pos))
             return plays
+
+        def remove_smaller(plays: List[position.Play]) -> List[position.Play]:
+            """Return a list of plays that use the maximum number of moves."""
+            max_play: int = max(len(p.moves) for p in plays)
+            if max_play == 1:
+                return list(filter(lambda p: len(p.moves) == max_play, plays))
+            return plays
+
+        def remove_lower(
+            plays: List[position.Play], dice: Tuple[int, ...]
+        ) -> List[position.Play]:
+            """Return a list of plays that most pips."""
+            higher_die: int = max(dice)
+            higher_plays: List[position.Play] = list(
+                filter(lambda p: p.moves[0].pips == higher_die, plays)
+            )
+            return higher_plays if higher_plays else plays
+
+        def remove_duplicate(plays: List[position.Play]) -> List[position.Play]:
+            """Return a list of plays that result in unique board positions."""
+            key_func: Callable = lambda p: hash(p.board)
+            plays = sorted(plays, key=key_func)
+            return list(
+                map(
+                    next,
+                    map(operator.itemgetter(1), itertools.groupby(plays, key_func)),
+                )
+            )
 
         doubles: bool = self.match.dice[0] == self.match.dice[1]
         dice: Tuple[int, ...] = self.match.dice * 2 if doubles else self.match.dice
 
-        plays: List[position.Position] = generate(self.position, dice)
+        plays: List[position.Play] = generate(self.position, dice, [], [])
         if not doubles:
-            plays += generate(self.position, tuple(reversed(dice)))
+            plays += generate(self.position, tuple(reversed(dice)), [], [])
 
-        # print(generate.cache_info())
+        plays = remove_smaller(plays)
+        if not doubles:
+            plays = remove_lower(plays, dice)
+        plays = remove_duplicate(plays)
 
-        return set(plays)
+        return plays
 
-    def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]]]) -> None:
+    def play(self, moves: Tuple[position.Move, ...]) -> None:
         """Excecute a play, a sequence of moves."""
         new_position: position.Position = self.position
-        for source, destination in moves:
-            new_position = position.apply_move(new_position, source, destination)
+        for move in moves:
+            new_position = position.apply_move(new_position, move)
 
-        legal_positions: Set[position.Position] = self.generate_plays()
+        legal_plays: List[position.Play] = self.generate_plays()
 
-        if new_position in legal_positions:
+        if new_position in [play.board for play in legal_plays]:
             self.position = new_position
         else:
             position_id: str = position.encode(self.position)

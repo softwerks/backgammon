@@ -21,7 +21,7 @@
 import base64
 import dataclasses
 import struct
-from typing import List, Optional, Tuple
+from typing import List, NamedTuple, Optional, Tuple
 
 
 @dataclasses.dataclass(frozen=True)
@@ -33,47 +33,39 @@ class Position:
     opponent_off: int
 
 
-def apply_move(
-    position: Position, source: Optional[int], destination: Optional[int]
-) -> Position:
-    """Apply a move and return a new position."""
+class Move(NamedTuple):
+    pips: int
+    source: Optional[int]
+    destination: Optional[int]
 
-    def move(source: int, destination: int) -> None:
-        """Move a player's checker from one point to another."""
-        hit: bool = True if board_points[destination] == -1 else False
+
+class Play(NamedTuple):
+    moves: Tuple[Move, ...]
+    board: Position
+
+
+def apply_move(board: Position, move: Move) -> Position:
+    """Apply a move and return a new position."""
+    board_points: List[int] = list(board.board_points)
+    player_bar: int = board.player_bar
+    player_off: int = board.player_off
+    opponent_bar: int = board.opponent_bar
+    opponent_off: int = board.opponent_off
+
+    if move.source is None:
+        player_bar -= 1
+    else:
+        board_points[move.source - 1] -= 1
+
+    if move.destination is None:
+        player_off += 1
+    else:
+        hit: bool = True if board_points[move.destination - 1] == -1 else False
         if hit:
-            board_points[source - 1] -= 1
-            board_points[destination - 1] = 1
+            board_points[move.destination - 1] = 1
             opponent_bar += 1
         else:
-            board_points[source - 1] -= 1
-            board_points[destination - 1] += 1
-
-    def enter_from_bar(destination: int) -> None:
-        """Move a player's checker from their bar to the board."""
-        player_bar -= 1
-        board_points[destination - 1] += 1
-
-    def bear_off(source: int) -> None:
-        """Remove a player's checker from the board."""
-        board_points[source - 1] -= 1
-        player_off += 1
-
-    # fix me
-
-    board_points: List[int] = list(position.board_points)
-    player_bar: int = position.player_bar
-    player_off: int = position.player_off
-    opponent_bar: int = position.opponent_bar
-    opponent_off: int = position.opponent_off
-
-    if source is None:
-        assert destination is not None
-        enter_from_bar(destination)
-    elif destination is None:
-        bear_off(source)
-    else:
-        move(source, destination)
+            board_points[move.destination - 1] += 1
 
     return Position(
         tuple(board_points), player_bar, player_off, opponent_bar, opponent_off
