@@ -152,20 +152,22 @@ class Backgammon:
                 plays.append(Play(tuple(moves), position))
             return plays
 
-        def remove_smaller(plays: List[Play]) -> List[Play]:
+        def remove_smaller(plays: List[Play], max_play: int) -> List[Play]:
             """Return a list of plays that use the maximum number of moves."""
-            max_play: int = max(len(p.moves) for p in plays)
-            if max_play == 1:
-                return list(filter(lambda p: len(p.moves) == max_play, plays))
-            return plays
+            return list(filter(lambda p: len(p.moves) == max_play, plays))
 
-        def remove_lower(plays: List[Play], dice: Tuple[int, ...]) -> List[Play]:
+        def remove_lower(
+            plays: List[Play], dice: Tuple[int, ...], max_play: int
+        ) -> List[Play]:
             """Return a list of plays that most pips."""
-            higher_die: int = max(dice)
-            higher_plays: List[Play] = list(
-                filter(lambda p: p.moves[0].pips == higher_die, plays)
-            )
-            return higher_plays if higher_plays else plays
+            if max_play == 1:
+                higher_die: int = max(dice)
+                higher_plays: List[Play] = list(
+                    filter(lambda p: p.moves[0].pips == higher_die, plays)
+                )
+                if higher_plays:
+                    return higher_plays
+            return plays
 
         def remove_duplicate(plays: List[Play]) -> List[Play]:
             """Return a list of plays that result in unique board positions."""
@@ -185,9 +187,10 @@ class Backgammon:
         if not doubles:
             plays += generate(self.position, tuple(reversed(dice)), [], [])
 
-        plays = remove_smaller(plays)
+        max_play: int = max(len(p.moves) for p in plays)
+        plays = remove_smaller(plays, max_play)
         if not doubles:
-            plays = remove_lower(plays, dice)
+            plays = remove_lower(plays, dice, max_play)
         plays = remove_duplicate(plays)
 
         return plays
