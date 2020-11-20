@@ -12,6 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from backgammon import match
-from backgammon import position
 from backgammon.backgammon import Backgammon

@@ -44,22 +44,6 @@ class Resign(enum.IntEnum):
     BACKGAMMON = 0b11
 
 
-@dataclasses.dataclass
-class Match:
-    cube_value: int
-    cube_holder: Player
-    player: Player
-    crawford: bool
-    game_state: GameState
-    turn: Player
-    double: bool
-    resign: Resign
-    dice: Tuple[int, int]
-    length: int
-    player_0_score: int
-    player_1_score: int
-
-
 class MatchKey(ctypes.LittleEndianStructure):
     """GNU Backgammon match key.
 
@@ -84,53 +68,67 @@ class MatchKey(ctypes.LittleEndianStructure):
     ]
 
 
-def decode(match_id: str) -> Match:
-    """Decode a match ID and return a Match.
+@dataclasses.dataclass
+class Match:
+    cube_value: int
+    cube_holder: Player
+    player: Player
+    crawford: bool
+    game_state: GameState
+    turn: Player
+    double: bool
+    resign: Resign
+    dice: Tuple[int, int]
+    length: int
+    player_0_score: int
+    player_1_score: int
 
-    >>> decode("QYkqASAAIAAA")
-    Match(cube_value=2, cube_holder=<Player.ZERO: 0>, player=<Player.ONE: 1>, crawford=False, game_state=<GameState.PLAYING: 1>, turn=<Player.ONE: 1>, double=False, resign=<Resign.NONE: 0>, dice=(5, 2), length=9, player_0_score=2, player_1_score=4)
-    """
-    match_key: MatchKey = MatchKey.from_buffer_copy(base64.b64decode(match_id))
+    @staticmethod
+    def decode(match_id: str) -> "Match":
+        """Decode a match ID and return a Match.
 
-    match: Match = Match(
-        cube_value=2 ** match_key.cube_value,
-        cube_holder=Player(match_key.cube_holder),
-        player=Player(match_key.player),
-        crawford=bool(match_key.crawford),
-        game_state=GameState(match_key.game_state),
-        turn=Player(match_key.turn),
-        double=bool(match_key.double),
-        resign=Resign(match_key.resign),
-        dice=(match_key.dice_1, match_key.dice_2),
-        length=match_key.length,
-        player_0_score=match_key.player_0_score,
-        player_1_score=match_key.player_1_score,
-    )
+        >>> Match.decode("QYkqASAAIAAA")
+        Match(cube_value=2, cube_holder=<Player.ZERO: 0>, player=<Player.ONE: 1>, crawford=False, game_state=<GameState.PLAYING: 1>, turn=<Player.ONE: 1>, double=False, resign=<Resign.NONE: 0>, dice=(5, 2), length=9, player_0_score=2, player_1_score=4)
+        """
+        match_key: MatchKey = MatchKey.from_buffer_copy(base64.b64decode(match_id))
 
-    return match
+        return Match(
+            cube_value=2 ** match_key.cube_value,
+            cube_holder=Player(match_key.cube_holder),
+            player=Player(match_key.player),
+            crawford=bool(match_key.crawford),
+            game_state=GameState(match_key.game_state),
+            turn=Player(match_key.turn),
+            double=bool(match_key.double),
+            resign=Resign(match_key.resign),
+            dice=(match_key.dice_1, match_key.dice_2),
+            length=match_key.length,
+            player_0_score=match_key.player_0_score,
+            player_1_score=match_key.player_1_score,
+        )
 
+    def encode(self) -> str:
+        """Encode the match and return a match ID.
 
-def encode(match: Match) -> str:
-    """Encode a Match and return a match ID.
+        >>> match = Match(cube_value=2, cube_holder=Player.ZERO, player=Player.ONE, crawford=False, game_state=GameState.PLAYING, turn=Player.ONE, double=False, resign=Resign.NONE, dice=(5, 2), length=9, player_0_score=2, player_1_score=4)
+        >>> match.encode()
+        'QYkqASAAIAAA'
+        """
+        match_key = MatchKey()
+        match_key.cube_value = int(math.log(self.cube_value, 2))
+        match_key.cube_holder = self.cube_holder.value
+        match_key.player = self.player.value
+        match_key.crawford = int(self.crawford)
+        match_key.game_state = self.game_state.value
+        match_key.turn = self.turn.value
+        match_key.double = int(self.double)
+        match_key.resign = self.resign.value
+        match_key.dice_1 = self.dice[0]
+        match_key.dice_2 = self.dice[1]
+        match_key.length = self.length
+        match_key.player_0_score = self.player_0_score
+        match_key.player_1_score = self.player_1_score
 
-    >>> encode(Match(cube_value=2, cube_holder=Player.ZERO, player=Player.ONE, crawford=False, game_state=GameState.PLAYING, turn=Player.ONE, double=False, resign=Resign.NONE, dice=(5, 2), length=9, player_0_score=2, player_1_score=4))
-    'QYkqASAAIAAA'
-    """
-    match_key = MatchKey()
-    match_key.cube_value = int(math.log(match.cube_value, 2))
-    match_key.cube_holder = match.cube_holder.value
-    match_key.player = match.player.value
-    match_key.crawford = int(match.crawford)
-    match_key.game_state = match.game_state.value
-    match_key.turn = match.turn.value
-    match_key.double = int(match.double)
-    match_key.resign = match.resign.value
-    match_key.dice_1 = match.dice[0]
-    match_key.dice_2 = match.dice[1]
-    match_key.length = match.length
-    match_key.player_0_score = match.player_0_score
-    match_key.player_1_score = match.player_1_score
+        match_id: str = base64.b64encode(bytes(match_key)).decode()
 
-    match_id: str = base64.b64encode(bytes(match_key)).decode()
-
-    return match_id
+        return match_id

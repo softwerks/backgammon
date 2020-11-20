@@ -15,10 +15,10 @@
 import enum
 import itertools
 import operator
-from typing import Callable, List, Optional, Tuple, Set
+from typing import Callable, List, NamedTuple, Optional, Tuple, Set
 
-from backgammon import match
-from backgammon import position
+from backgammon.match import Player, GameState, Resign, Match
+from backgammon.position import Position
 
 STARTING_POSITION_ID = "4HPwATDgc/ABMA"
 STARTING_MATCH_ID = "cAgAAAAAAAAA"
@@ -43,131 +43,134 @@ class MoveState(enum.Enum):
     DEFAULT = enum.auto()
 
 
+class Move(NamedTuple):
+    pips: int
+    source: Optional[int]
+    destination: Optional[int]
+
+
+class Play(NamedTuple):
+    moves: Tuple[Move, ...]
+    position: Position
+
+
 class Backgammon:
     def __init__(
         self, position_id: str = STARTING_POSITION_ID, match_id: str = STARTING_MATCH_ID
     ):
-        self.position: position.Position = position.decode(position_id)
-        self.match: match.Match = match.decode(match_id)
+        self.position: Position = Position.decode(position_id)
+        self.match: Match = Match.decode(match_id)
 
-    def generate_plays(self) -> List[position.Play]:
+    def generate_plays(self) -> List[Play]:
         """Generate legal plays and return a set of the corresponding positions."""
 
-        def get_player_home(pos: position.Position) -> Tuple[int, ...]:
+        def get_player_home(position: Position) -> Tuple[int, ...]:
             """Return a sequence of the player's checkers in their home board."""
-            home_board: Tuple[int, ...] = pos.board_points[:POINTS_PER_QUADRANT]
+            home_board: Tuple[int, ...] = position.board_points[:POINTS_PER_QUADRANT]
             return tuple(point if point > 0 else 0 for point in home_board)
 
-        def get_move_state(pos: position.Position) -> MoveState:
+        def get_move_state(position: Position) -> MoveState:
             """Return the move state, which determines the types of moves allowed."""
             move_state: MoveState = MoveState.DEFAULT
-            if pos.player_bar > 0:
+            if position.player_bar > 0:
                 move_state = MoveState.ENTER_FROM_BAR
             else:
-                player_home: int = sum(get_player_home(pos))
-                if player_home + pos.player_off == CHECKERS:
+                player_home: int = sum(get_player_home(position))
+                if player_home + position.player_off == CHECKERS:
                     move_state = MoveState.BEAR_OFF
             return move_state
 
-        def try_default(
-            pos: position.Position, source: int, pips: int
-        ) -> Optional[position.Move]:
+        def try_default(position: Position, source: int, pips: int) -> Optional[Move]:
             """Try to move a checker from one point to another and return the move if valid."""
-            if pos.board_points[source - 1] > 0:
+            if position.board_points[source - 1] > 0:
                 destination: int = source - pips
-                if destination > 0 and pos.board_points[destination - 1] > -2:
-                    return position.Move(pips, source, destination)
+                if destination > 0 and position.board_points[destination - 1] > -2:
+                    return Move(pips, source, destination)
             return None
 
-        def try_enter_from_bar(
-            pos: position.Position, pips: int
-        ) -> Optional[position.Move]:
+        def try_enter_from_bar(position: Position, pips: int) -> Optional[Move]:
             """Try to move a checker from the bar to a point and return the move if valid."""
             destination: int = POINTS - (pips - 1)
-            if pos.board_points[destination - 1] > -2:
-                return position.Move(pips, None, destination)
+            if position.board_points[destination - 1] > -2:
+                return Move(pips, None, destination)
             return None
 
-        def try_bear_off(
-            pos: position.Position, source: int, pips: int
-        ) -> Optional[position.Move]:
+        def try_bear_off(position: Position, source: int, pips: int) -> Optional[Move]:
             """Try to bear off a checker or move a checker from one point to another and return the move if valid."""
-            if pos.board_points[source - 1] > 0:
+            if position.board_points[source - 1] > 0:
                 destination: int = source - pips
                 if destination < 1:
-                    higher_points: int = sum(get_player_home(pos)[:source])
+                    higher_points: int = sum(get_player_home(position)[:source])
                     if higher_points == 0:
-                        return position.Move(pips, source, None)
+                        return Move(pips, source, None)
                 else:
-                    return try_default(pos, source, pips)
+                    return try_default(position, source, pips)
             return None
 
         def generate(
-            pos: position.Position,
+            position: Position,
             dice: Tuple[int, ...],
-            moves: List[position.Move],
-            plays: List[position.Play],
-        ) -> List[position.Play]:
+            moves: List[Move],
+            plays: List[Play],
+        ) -> List[Play]:
             """Generate legal plays."""
             if dice:
                 pips: int = dice[0]
 
-                move_state: MoveState = get_move_state(pos)
+                move_state: MoveState = get_move_state(position)
 
-                move: Optional[position.Move] = None
+                move: Optional[Move] = None
                 if move_state is MoveState.DEFAULT:
                     for source in range(POINTS, 0, -1):
-                        move = try_default(pos, source, pips)
+                        move = try_default(position, source, pips)
                         if move:
                             generate(
-                                position.apply_move(pos, move),
+                                position.apply_move(move.source, move.destination),
                                 dice[1:],
                                 moves + [move],
                                 plays,
                             )
                 elif move_state is MoveState.ENTER_FROM_BAR:
-                    move = try_enter_from_bar(pos, pips)
+                    move = try_enter_from_bar(position, pips)
                     if move:
                         generate(
-                            position.apply_move(pos, move),
+                            position.apply_move(move.source, move.destination),
                             dice[1:],
                             moves + [move],
                             plays,
                         )
                 elif move_state is MoveState.BEAR_OFF:
                     for source in range(POINTS_PER_QUADRANT, 0, -1):
-                        move = try_bear_off(pos, source, pips)
+                        move = try_bear_off(position, source, pips)
                         if move:
                             generate(
-                                position.apply_move(pos, move),
+                                position.apply_move(move.source, move.destination),
                                 dice[1:],
                                 moves + [move],
                                 plays,
                             )
             else:
-                plays.append(position.Play(tuple(moves), pos))
+                plays.append(Play(tuple(moves), position))
             return plays
 
-        def remove_smaller(plays: List[position.Play]) -> List[position.Play]:
+        def remove_smaller(plays: List[Play]) -> List[Play]:
             """Return a list of plays that use the maximum number of moves."""
             max_play: int = max(len(p.moves) for p in plays)
             if max_play == 1:
                 return list(filter(lambda p: len(p.moves) == max_play, plays))
             return plays
 
-        def remove_lower(
-            plays: List[position.Play], dice: Tuple[int, ...]
-        ) -> List[position.Play]:
+        def remove_lower(plays: List[Play], dice: Tuple[int, ...]) -> List[Play]:
             """Return a list of plays that most pips."""
             higher_die: int = max(dice)
-            higher_plays: List[position.Play] = list(
+            higher_plays: List[Play] = list(
                 filter(lambda p: p.moves[0].pips == higher_die, plays)
             )
             return higher_plays if higher_plays else plays
 
-        def remove_duplicate(plays: List[position.Play]) -> List[position.Play]:
+        def remove_duplicate(plays: List[Play]) -> List[Play]:
             """Return a list of plays that result in unique board positions."""
-            key_func: Callable = lambda p: hash(p.board)
+            key_func: Callable = lambda p: hash(p.position)
             plays = sorted(plays, key=key_func)
             return list(
                 map(
@@ -179,7 +182,7 @@ class Backgammon:
         doubles: bool = self.match.dice[0] == self.match.dice[1]
         dice: Tuple[int, ...] = self.match.dice * 2 if doubles else self.match.dice
 
-        plays: List[position.Play] = generate(self.position, dice, [], [])
+        plays: List[Play] = generate(self.position, dice, [], [])
         if not doubles:
             plays += generate(self.position, tuple(reversed(dice)), [], [])
 
@@ -190,24 +193,24 @@ class Backgammon:
 
         return plays
 
-    def play(self, moves: Tuple[position.Move, ...]) -> None:
+    def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]], ...]) -> None:
         """Excecute a play, a sequence of moves."""
-        new_position: position.Position = self.position
-        for move in moves:
-            new_position = position.apply_move(new_position, move)
+        new_position: Position = self.position
+        for source, destination in moves:
+            new_position = new_position.apply_move(source, destination)
 
-        legal_plays: List[position.Play] = self.generate_plays()
+        legal_plays: List[Play] = self.generate_plays()
 
-        if new_position in [play.board for play in legal_plays]:
+        if new_position in [play.position for play in legal_plays]:
             self.position = new_position
         else:
-            position_id: str = position.encode(self.position)
-            match_id: str = match.encode(self.match)
+            position_id: str = self.position.encode()
+            match_id: str = self.match.encode()
             raise BackgammonError(f"Invalid move: {position_id}:{match_id} {moves}")
 
     def __repr__(self):
-        position_id: str = position.encode(self.position)
-        match_id: str = match.encode(self.match)
+        position_id: str = self.position.encode()
+        match_id: str = self.match.encode()
         return f"{__name__}.{self.__class__.__name__}('{position_id}', '{match_id}')"
 
     def __str__(self):
@@ -233,11 +236,11 @@ class Backgammon:
             return ascii_checkers
 
         def split(position: List[int]) -> Tuple[List[int], List[int]]:
-            """Return a position split into top (match.Player.ZERO 12-1) and bottom (match.Player.ZERO 13-24) halves."""
+            """Return a position split into top (Player.ZERO 12-1) and bottom (Player.ZERO 13-24) halves."""
 
             def normalize(position: List[int]) -> List[int]:
-                """Return position for match.Player.ZERO"""
-                if self.match.player is match.Player.ONE:
+                """Return position for Player.ZERO"""
+                if self.match.player is Player.ONE:
                     position = list(map(lambda n: -n, position[::-1]))
                 return position
 
@@ -256,18 +259,18 @@ class Backgammon:
         )
 
         ascii_board: str = ""
-        position_id: str = position.encode(self.position)
+        position_id: str = self.position.encode()
         ascii_board += f"                 Position ID: {position_id}\n"
-        match_id: str = match.encode(self.match)
+        match_id: str = self.match.encode()
         ascii_board += f"                 Match ID   : {match_id}\n"
         ascii_board += (
             " "
-            + (ASCII_12_01 if self.match.player is match.Player.ZERO else ASCII_13_24)
+            + (ASCII_12_01 if self.match.player is Player.ZERO else ASCII_13_24)
             + "\n"
         )
         for i in range(len(points)):
             ascii_board += (
-                ("^|" if self.match.player == 0 else "v|")
+                ("^|" if self.match.player is Player.ZERO else "v|")
                 if i == int(ASCII_BOARD_HEIGHT / 2)
                 else " |"
             )
@@ -280,7 +283,7 @@ class Backgammon:
             ascii_board += "\n"
         ascii_board += (
             " "
-            + (ASCII_13_24 if self.match.player is match.Player.ZERO else ASCII_12_01)
+            + (ASCII_13_24 if self.match.player is Player.ZERO else ASCII_12_01)
             + "\n"
         )
 
