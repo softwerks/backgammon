@@ -71,14 +71,13 @@ class Backgammon:
 
         def get_move_state(position: Position) -> MoveState:
             """Return the move state, which determines the types of moves allowed."""
-            move_state: MoveState = MoveState.DEFAULT
             if position.player_bar > 0:
-                move_state = MoveState.ENTER_FROM_BAR
+                return MoveState.ENTER_FROM_BAR
             else:
                 player_home: int = sum(get_player_home(position))
                 if player_home + position.player_off == CHECKERS:
-                    move_state = MoveState.BEAR_OFF
-            return move_state
+                    return MoveState.BEAR_OFF
+            return MoveState.DEFAULT
 
         def try_default(position: Position, source: int, pips: int) -> Optional[Move]:
             """Try to move a checker from one point to another and return the move if valid."""
