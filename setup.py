@@ -24,7 +24,7 @@ setup(
     author_email="info@softwerks.com",
     description="Backgammon engine for the Backgammon Network.",
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url="https://github.com/softwerks/backgammon",
     packages=find_packages(),
     classifiers=[
