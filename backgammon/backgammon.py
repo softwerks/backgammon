@@ -108,6 +108,17 @@ class Backgammon:
                     return try_default(position, source, pips)
             return None
 
+        def append_plays(plays: List[Play], subplays: List[Play], move: Move, new_position: Position) -> List[Play]:
+            """Append subplays if any exist and return an updated list of plays."""
+            if subplays:
+                for play in subplays:
+                    plays.append(
+                        Play((move,) + play.moves, play.position)
+                    )
+            else:
+                plays.append(Play((move,), new_position))
+            return plays
+
         @functools.lru_cache()
         def generate(position: Position, dice: Tuple[int, ...]) -> List[Play]:
             """Generate legal plays."""
@@ -128,13 +139,7 @@ class Backgammon:
                                 move.source, move.destination
                             )
                             subplays = generate(new_position, dice[1:])
-                            if subplays:
-                                for play in subplays:
-                                    plays.append(
-                                        Play((move,) + play.moves, play.position)
-                                    )
-                            else:
-                                plays.append(Play((move,), new_position))
+                            plays = append_plays(plays, subplays, move, new_position)
                 elif move_state is MoveState.ENTER_FROM_BAR:
                     move = try_enter_from_bar(position, pips)
                     if move:
@@ -142,11 +147,7 @@ class Backgammon:
                             move.source, move.destination
                         )
                         subplays = generate(new_position, dice[1:])
-                        if subplays:
-                            for play in subplays:
-                                plays.append(Play((move,) + play.moves, play.position))
-                        else:
-                            plays.append(Play((move,), new_position))
+                        plays = append_plays(plays, subplays, move, new_position)
                 elif move_state is MoveState.BEAR_OFF:
                     for source in range(POINTS_PER_QUADRANT, 0, -1):
                         move = try_bear_off(position, source, pips)
@@ -155,13 +156,7 @@ class Backgammon:
                                 move.source, move.destination
                             )
                             subplays = generate(new_position, dice[1:])
-                            if subplays:
-                                for play in subplays:
-                                    plays.append(
-                                        Play((move,) + play.moves, play.position)
-                                    )
-                            else:
-                                plays.append(Play((move,), new_position))
+                            plays = append_plays(plays, subplays, move, new_position)
             return plays
 
         def remove_smaller(plays: List[Play], max_play: int) -> List[Play]:
