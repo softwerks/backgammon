@@ -108,20 +108,32 @@ class Backgammon:
                     return try_default(position, source, pips)
             return None
 
-        def append_plays(plays: List[Play], subplays: List[Play], move: Move, new_position: Position) -> List[Play]:
+        def append_plays(
+            plays: List[Play], subplays: List[Play], move: Move, new_position: Position
+        ) -> List[Play]:
             """Append subplays if any exist and return an updated list of plays."""
             if subplays:
                 for play in subplays:
-                    plays.append(
-                        Play((move,) + play.moves, play.position)
-                    )
+                    plays.append(Play((move,) + play.moves, play.position))
             else:
                 plays.append(Play((move,), new_position))
             return plays
 
         @functools.lru_cache()
         def generate(position: Position, dice: Tuple[int, ...]) -> List[Play]:
-            """Generate legal plays."""
+            """Generate legal plays and return the list of plays."""
+
+            def generate_subplays(
+                plays: List[Play], position: Position, dice: Tuple[int, ...], move: Move
+            ) -> List[Play]:
+                """Generate subplays and return the updated list of plays."""
+                new_position: Position = position.apply_move(
+                    move.source, move.destination
+                )
+                subplays: List[Play] = generate(new_position, dice[1:])
+                plays = append_plays(plays, subplays, move, new_position)
+                return plays
+
             plays: List[Play] = []
 
             if dice:
@@ -130,33 +142,20 @@ class Backgammon:
                 move_state: MoveState = get_move_state(position)
 
                 move: Optional[Move] = None
-                subplays: List[Play] = []
                 if move_state is MoveState.DEFAULT:
                     for source in range(POINTS, 0, -1):
                         move = try_default(position, source, pips)
                         if move:
-                            new_position = position.apply_move(
-                                move.source, move.destination
-                            )
-                            subplays = generate(new_position, dice[1:])
-                            plays = append_plays(plays, subplays, move, new_position)
+                            plays = generate_subplays(plays, position, dice, move)
                 elif move_state is MoveState.ENTER_FROM_BAR:
                     move = try_enter_from_bar(position, pips)
                     if move:
-                        new_position = position.apply_move(
-                            move.source, move.destination
-                        )
-                        subplays = generate(new_position, dice[1:])
-                        plays = append_plays(plays, subplays, move, new_position)
+                        plays = generate_subplays(plays, position, dice, move)
                 elif move_state is MoveState.BEAR_OFF:
                     for source in range(POINTS_PER_QUADRANT, 0, -1):
                         move = try_bear_off(position, source, pips)
                         if move:
-                            new_position = position.apply_move(
-                                move.source, move.destination
-                            )
-                            subplays = generate(new_position, dice[1:])
-                            plays = append_plays(plays, subplays, move, new_position)
+                            plays = generate_subplays(plays, position, dice, move)
             return plays
 
         def remove_smaller(plays: List[Play], max_play: int) -> List[Play]:
