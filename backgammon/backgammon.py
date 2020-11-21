@@ -98,9 +98,10 @@ class Backgammon:
             """Try to bear off a checker or move a checker from one point to another and return the move if valid."""
             if position.board_points[source - 1] > 0:
                 destination: int = source - pips
-                if destination < 1:
-                    higher_points: int = sum(get_player_home(position)[:source])
-                    if higher_points == 0:
+                if destination == 0:
+                    return Move(pips, source, None)
+                elif destination < 0:
+                    if sum(get_player_home(position)[source:]) == 0:
                         return Move(pips, source, None)
                 else:
                     return try_default(position, source, pips)
