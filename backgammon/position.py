@@ -61,6 +61,15 @@ class Position:
             tuple(board_points), player_bar, player_off, opponent_bar, opponent_off
         )
 
+    def swap_players(self) -> "Position":
+        return Position(
+            tuple(map(lambda n: -n, self.board_points[::-1])),
+            self.opponent_bar,
+            self.opponent_off,
+            self.player_bar,
+            self.player_off,
+        )
+
     @staticmethod
     def decode(position_id: str) -> "Position":
         """Decode a position ID and return a Position.

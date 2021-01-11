@@ -83,6 +83,12 @@ class Match:
     player_0_score: int
     player_1_score: int
 
+    def swap_players(self) -> None:
+        if self.player is Player.ZERO:
+            self.player = Player.ONE
+        else:
+            self.player = Player.ZERO
+
     @staticmethod
     def decode(match_id: str) -> "Match":
         """Decode a match ID and return a Match.

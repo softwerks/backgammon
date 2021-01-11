@@ -16,6 +16,7 @@ import enum
 import functools
 import itertools
 import operator
+import random
 from typing import Callable, List, NamedTuple, Optional, Tuple, Set
 
 from backgammon.match import Player, GameState, Resign, Match
@@ -201,6 +202,13 @@ class Backgammon:
 
         return plays
 
+    def roll(self) -> Tuple[int, int]:
+        self.match.dice = (
+            random.SystemRandom().randrange(1, 6),
+            random.SystemRandom().randrange(1, 6),
+        )
+        return self.match.dice
+
     def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]], ...]) -> None:
         """Excecute a play, a sequence of moves."""
         new_position: Position = self.position
@@ -211,10 +219,16 @@ class Backgammon:
 
         if new_position in [play.position for play in legal_plays]:
             self.position = new_position
+            if self.position.player_off == CHECKERS:
+                self.match.game_state = GameState.GAME_OVER
         else:
             position_id: str = self.position.encode()
             match_id: str = self.match.encode()
             raise BackgammonError(f"Invalid move: {position_id}:{match_id} {moves}")
+
+    def end_turn(self) -> None:
+        self.position = self.position.swap_players()
+        self.match.swap_players()
 
     def __repr__(self):
         position_id: str = self.position.encode()
