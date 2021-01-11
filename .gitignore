@@ -1,3 +1,6 @@
+# ctags
+tags
+
 # Python
 *.egg-info/
 __pycache__/
