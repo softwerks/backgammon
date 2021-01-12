@@ -19,7 +19,7 @@ with open("README.rst", encoding="utf-8") as f:
 
 setup(
     name="backgammon",
-    version="0.1.1",
+    version="0.1.2",
     author="Softwerks",
     author_email="info@softwerks.com",
     description="Backgammon engine for the Backgammon Network.",
