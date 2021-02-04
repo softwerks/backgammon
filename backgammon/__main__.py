@@ -42,19 +42,10 @@ class BackgammonShell(cmd.Cmd):
             return
 
         self.game = Backgammon()
-
-        while True:
-            die_1, die_2 = self.game.roll()
-            print(f"P1 rolls {die_1}, P2 rolls {die_2}")
-            if die_1 != die_2:
-                break
-        if die_1 > die_2:
-            self.game.match.player = Player.ZERO
-        else:
-            self.game.match.player = Player.ONE
-
+        die_1, die_2 = self.game.first_roll()
         self.game.match.game_state = GameState.PLAYING
 
+        print(f"Rolled {die_1} {die_2}")
         print(self.game)
 
     def do_move(self, arg: str) -> None:

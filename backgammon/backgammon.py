@@ -15,6 +15,7 @@
 import enum
 import functools
 import itertools
+import json
 import operator
 import random
 from typing import Callable, List, NamedTuple, Optional, Tuple, Set
@@ -209,6 +210,17 @@ class Backgammon:
         )
         return self.match.dice
 
+    def first_roll(self) -> Tuple[int, int]:
+        while True:
+            die_1, die_2 = self.roll()
+            if die_1 != die_2:
+                break
+        if die_1 > die_2:
+            self.match.player = Player.ZERO
+        else:
+            self.match.player = Player.ONE
+        return self.match.dice
+
     def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]], ...]) -> None:
         """Excecute a play, a sequence of moves."""
         new_position: Position = self.position
@@ -229,6 +241,9 @@ class Backgammon:
     def end_turn(self) -> None:
         self.position = self.position.swap_players()
         self.match.swap_players()
+
+    def to_json(self) -> str:
+        return json.dumps({"position": self.position.__dict__, "match": self.match.__dict__})
 
     def __repr__(self):
         position_id: str = self.position.encode()
