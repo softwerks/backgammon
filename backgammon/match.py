@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import base64
-import ctypes
 import dataclasses
 import enum
 import math
+import struct
 from typing import Tuple
 
 
@@ -42,30 +42,6 @@ class Resign(enum.IntEnum):
     SINGLE_GAME = 0b01
     GAMMON = 0b10
     BACKGAMMON = 0b11
-
-
-class MatchKey(ctypes.LittleEndianStructure):
-    """GNU Backgammon match key.
-
-    https://www.gnu.org/software/gnubg/manual/html_node/A-technical-description-of-the-Match-ID.html
-    """
-
-    _pack_ = 1
-    _fields_ = [
-        ("cube_value", ctypes.c_uint8, 4),
-        ("cube_holder", ctypes.c_uint8, 2),
-        ("player", ctypes.c_uint8, 1),
-        ("crawford", ctypes.c_uint8, 1),
-        ("game_state", ctypes.c_uint64, 3),
-        ("turn", ctypes.c_uint64, 1),
-        ("double", ctypes.c_uint64, 1),
-        ("resign", ctypes.c_uint64, 2),
-        ("dice_1", ctypes.c_uint64, 3),
-        ("dice_2", ctypes.c_uint64, 3),
-        ("length", ctypes.c_uint64, 15),
-        ("player_0_score", ctypes.c_uint64, 15),
-        ("player_1_score", ctypes.c_uint64, 15),
-    ]
 
 
 @dataclasses.dataclass
@@ -96,21 +72,21 @@ class Match:
         >>> Match.decode("QYkqASAAIAAA")
         Match(cube_value=2, cube_holder=<Player.ZERO: 0>, player=<Player.ONE: 1>, crawford=False, game_state=<GameState.PLAYING: 1>, turn=<Player.ONE: 1>, double=False, resign=<Resign.NONE: 0>, dice=(5, 2), length=9, player_0_score=2, player_1_score=4)
         """
-        match_key: MatchKey = MatchKey.from_buffer_copy(base64.b64decode(match_id))
-
+        match_bytes: bytes = base64.b64decode(match_id)
+        match_key: str = "".join([format(b, "08b")[::-1] for b in match_bytes])
         return Match(
-            cube_value=2 ** match_key.cube_value,
-            cube_holder=Player(match_key.cube_holder),
-            player=Player(match_key.player),
-            crawford=bool(match_key.crawford),
-            game_state=GameState(match_key.game_state),
-            turn=Player(match_key.turn),
-            double=bool(match_key.double),
-            resign=Resign(match_key.resign),
-            dice=(match_key.dice_1, match_key.dice_2),
-            length=match_key.length,
-            player_0_score=match_key.player_0_score,
-            player_1_score=match_key.player_1_score,
+            cube_value=2 ** int(match_key[0:4][::-1], 2),
+            cube_holder=Player(int(match_key[4:6][::-1], 2)),
+            player=Player(int(match_key[6])),
+            crawford=bool(int(match_key[7])),
+            game_state=GameState(int(match_key[8:11][::-1], 2)),
+            turn=Player(int(match_key[11])),
+            double=bool(int(match_key[12])),
+            resign=Resign(int(match_key[13:15][::-1], 2)),
+            dice=(int(match_key[15:18][::-1], 2), int(match_key[18:21][::-1], 2)),
+            length=int(match_key[21:36][::-1], 2),
+            player_0_score=int(match_key[36:51][::-1], 2),
+            player_1_score=int(match_key[51:66][::-1], 2),
         )
 
     def encode(self) -> str:
@@ -120,21 +96,25 @@ class Match:
         >>> match.encode()
         'QYkqASAAIAAA'
         """
-        match_key = MatchKey()
-        match_key.cube_value = int(math.log(self.cube_value, 2))
-        match_key.cube_holder = self.cube_holder.value
-        match_key.player = self.player.value
-        match_key.crawford = int(self.crawford)
-        match_key.game_state = self.game_state.value
-        match_key.turn = self.turn.value
-        match_key.double = int(self.double)
-        match_key.resign = self.resign.value
-        match_key.dice_1 = self.dice[0]
-        match_key.dice_2 = self.dice[1]
-        match_key.length = self.length
-        match_key.player_0_score = self.player_0_score
-        match_key.player_1_score = self.player_1_score
-
-        match_id: str = base64.b64encode(bytes(match_key)).decode()
-
-        return match_id
+        match_key: str = "".join(
+            (
+                f"{int(math.log(self.cube_value, 2)):04b}"[::-1],
+                f"{self.cube_holder.value:02b}"[::-1],
+                f"{self.player.value:b}",
+                f"{self.crawford:b}",
+                f"{self.game_state.value:03b}"[::-1],
+                f"{self.turn.value:b}",
+                f"{self.double:b}",
+                f"{self.resign.value:02b}"[::-1],
+                f"{self.dice[0]:03b}"[::-1],
+                f"{self.dice[1]:03b}"[::-1],
+                f"{self.length:015b}"[::-1],
+                f"{self.player_0_score:015b}"[::-1],
+                f"{self.player_1_score:015b}"[::-1],
+            )
+        )
+        byte_strings: Tuple[str, ...] = tuple(
+            match_key[i : i + 8][::-1] for i in range(0, len(match_key), 8)
+        )
+        match_bytes: bytes = struct.pack("9B", *(int(b, 2) for b in byte_strings))
+        return base64.b64encode(bytes(match_bytes)).decode()
