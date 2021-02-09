@@ -243,7 +243,13 @@ class Backgammon:
         self.match.swap_players()
 
     def to_json(self) -> str:
-        return json.dumps({"position": self.position.__dict__, "match": self.match.__dict__})
+        return json.dumps(
+            {
+                "position": self.position.__dict__,
+                "match": self.match.__dict__,
+                "gnubg_id": f"{self.position.encode()}:{self.match.encode()}",
+            }
+        )
 
     def __repr__(self):
         position_id: str = self.position.encode()
