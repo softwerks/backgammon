@@ -109,10 +109,10 @@ class Position:
         board_points: Tuple[int, ...] = merge_points(player_points, opponent_points)
 
         player_bar: int = checkers[49]
-        player_off: int = abs(15 - sum(player_points))
+        player_off: int = abs(15 - sum(player_points) - player_bar)
 
         opponent_bar: int = -checkers[24]
-        opponent_off: int = -abs(15 - sum(opponent_points))
+        opponent_off: int = -abs(15 - sum(opponent_points) - abs(opponent_bar))
 
         return Position(
             board_points=board_points,
