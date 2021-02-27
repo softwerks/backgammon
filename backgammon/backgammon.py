@@ -238,6 +238,13 @@ class Backgammon:
             match_id: str = self.match.encode()
             raise BackgammonError(f"Invalid move: {position_id}:{match_id} {moves}")
 
+    def skip(self) -> None:
+        num_plays: int = len(self.generate_plays())
+        if num_plays == 0:
+            self.end_turn()
+        else:
+            raise BackgammonError(f"Cannot skip turn: {num_plays} possible plays")
+
     def end_turn(self) -> None:
         self.position = self.position.swap_players()
         self.match.swap_players()
