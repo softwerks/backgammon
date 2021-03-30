@@ -65,6 +65,9 @@ class Match:
         else:
             self.player = Player.ZERO
 
+    def reset_dice(self) -> None:
+        self.dice = (0, 0)
+
     @staticmethod
     def decode(match_id: str) -> "Match":
         """Decode a match ID and return a Match.
