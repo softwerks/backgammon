@@ -204,6 +204,9 @@ class Backgammon:
         return plays
 
     def roll(self) -> Tuple[int, int]:
+        if self.match.dice != (0, 0):
+            raise BackgammonError(f"Dice have already been rolled: {self.match.dice}")
+
         self.match.dice = (
             random.SystemRandom().randrange(1, 6),
             random.SystemRandom().randrange(1, 6),
@@ -248,6 +251,7 @@ class Backgammon:
     def end_turn(self) -> None:
         self.position = self.position.swap_players()
         self.match.swap_players()
+        self.match.reset_dice()
 
     def to_json(self) -> str:
         return json.dumps(
