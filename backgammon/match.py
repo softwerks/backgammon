@@ -62,8 +62,10 @@ class Match:
     def swap_players(self) -> None:
         if self.player is Player.ZERO:
             self.player = Player.ONE
+            self.turn = Player.ONE
         else:
             self.player = Player.ZERO
+            self.turn = Player.ZERO
 
     def reset_dice(self) -> None:
         self.dice = (0, 0)

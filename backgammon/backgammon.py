@@ -203,6 +203,11 @@ class Backgammon:
 
         return plays
 
+    def start(self, length: int = 3) -> None:
+        self.match.game_state = GameState.PLAYING
+        self.match.length = length
+        self.first_roll()
+
     def roll(self) -> Tuple[int, int]:
         if self.match.dice != (0, 0):
             raise BackgammonError(f"Dice have already been rolled: {self.match.dice}")
@@ -215,13 +220,18 @@ class Backgammon:
 
     def first_roll(self) -> Tuple[int, int]:
         while True:
-            die_1, die_2 = self.roll()
-            if die_1 != die_2:
+            self.match.dice = (
+                random.SystemRandom().randrange(1, 6),
+                random.SystemRandom().randrange(1, 6),
+            )
+            if self.match.dice[0] != self.match.dice[1]:
                 break
-        if die_1 > die_2:
+        if self.match.dice[0] > self.match.dice[1]:
             self.match.player = Player.ZERO
+            self.match.turn = Player.ZERO
         else:
             self.match.player = Player.ONE
+            self.match.turn = Player.ONE
         return self.match.dice
 
     def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]], ...]) -> None:
