@@ -45,17 +45,17 @@ class Position:
         if source is None:
             player_bar -= 1
         else:
-            board_points[source - 1] -= 1
+            board_points[source] -= 1
 
         if destination is None:
             player_off += 1
         else:
-            hit: bool = True if board_points[destination - 1] == -1 else False
+            hit: bool = True if board_points[destination] == -1 else False
             if hit:
-                board_points[destination - 1] = 1
+                board_points[destination] = 1
                 opponent_bar += 1
             else:
-                board_points[destination - 1] += 1
+                board_points[destination] += 1
 
         return Position(
             tuple(board_points), player_bar, player_off, opponent_bar, opponent_off

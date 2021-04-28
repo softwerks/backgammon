@@ -84,22 +84,22 @@ class Backgammon:
 
         def try_default(position: Position, source: int, pips: int) -> Optional[Move]:
             """Try to move a checker from one point to another and return the move if valid."""
-            if position.board_points[source - 1] > 0:
+            if position.board_points[source] > 0:
                 destination: int = source - pips
-                if destination > 0 and position.board_points[destination - 1] > -2:
+                if destination > 0 and position.board_points[destination] > -2:
                     return Move(pips, source, destination)
             return None
 
         def try_enter_from_bar(position: Position, pips: int) -> Optional[Move]:
             """Try to move a checker from the bar to a point and return the move if valid."""
             destination: int = POINTS - (pips - 1)
-            if position.board_points[destination - 1] > -2:
+            if position.board_points[destination] > -2:
                 return Move(pips, None, destination)
             return None
 
         def try_bear_off(position: Position, source: int, pips: int) -> Optional[Move]:
             """Try to bear off a checker or move a checker from one point to another and return the move if valid."""
-            if position.board_points[source - 1] > 0:
+            if position.board_points[source] > 0:
                 destination: int = source - pips
                 if destination == 0:
                     return Move(pips, source, None)
@@ -145,7 +145,7 @@ class Backgammon:
 
                 move: Optional[Move] = None
                 if move_state is MoveState.DEFAULT:
-                    for source in range(POINTS, 0, -1):
+                    for source in range(POINTS - 1, -1, -1):
                         move = try_default(position, source, pips)
                         if move:
                             plays = generate_subplays(plays, position, dice, move)
@@ -154,7 +154,7 @@ class Backgammon:
                     if move:
                         plays = generate_subplays(plays, position, dice, move)
                 elif move_state is MoveState.BEAR_OFF:
-                    for source in range(POINTS_PER_QUADRANT, 0, -1):
+                    for source in range(POINTS_PER_QUADRANT - 1, -1, -1):
                         move = try_bear_off(position, source, pips)
                         if move:
                             plays = generate_subplays(plays, position, dice, move)
@@ -268,9 +268,11 @@ class Backgammon:
             {
                 "position": self.position.__dict__,
                 "match": self.match.__dict__,
-                "gnubg_id": f"{self.position.encode()}:{self.match.encode()}",
             }
         )
+
+    def encode(self) -> str:
+        return f"{self.position.encode()}:{self.match.encode()}"
 
     def __repr__(self):
         position_id: str = self.position.encode()
