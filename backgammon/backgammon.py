@@ -87,8 +87,10 @@ class Backgammon:
             if position.board_points[point] > 0:
                 destination: int = point - pips
                 if destination < 0:
-                    checkers_on_higher_points: int = sum(player_home(position)[point + 1 : pips])
-                    if (destination == -1 or checkers_on_higher_points == 0):
+                    checkers_on_higher_points: int = sum(
+                        player_home(position)[point + 1 : pips]
+                    )
+                    if destination == -1 or checkers_on_higher_points == 0:
                         return position.apply_move(point, None), None
                 elif position.board_points[destination] >= -1:
                     return position.apply_move(point, destination), destination
