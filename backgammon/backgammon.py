@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import enum
-import functools
 import itertools
 import json
 import operator
@@ -65,141 +64,126 @@ class Backgammon:
         self.match: Match = Match.decode(match_id)
 
     def generate_plays(self) -> List[Play]:
-        """Generate legal plays and return a set of the corresponding positions."""
+        """Generate and return legal plays."""
 
-        def get_player_home(position: Position) -> Tuple[int, ...]:
-            """Return a sequence of the player's checkers in their home board."""
+        def enter(
+            position: Position, pips: int
+        ) -> Tuple[Optional[Position], Optional[int]]:
+            """Try to enter from the bar and return the new position and destination."""
+            destination: int = POINTS - pips
+            if position.board_points[destination] >= -1:
+                return position.apply_move(None, destination), destination
+            return None, None
+
+        def player_home(position: Position) -> Tuple[int, ...]:
+            """Return checkers in the player's home board."""
             home_board: Tuple[int, ...] = position.board_points[:POINTS_PER_QUADRANT]
             return tuple(point if point > 0 else 0 for point in home_board)
 
-        def get_move_state(position: Position) -> MoveState:
-            """Return the move state, which determines the types of moves allowed."""
-            if position.player_bar > 0:
-                return MoveState.ENTER_FROM_BAR
-            else:
-                player_home: int = sum(get_player_home(position))
-                if player_home + position.player_off == CHECKERS:
-                    return MoveState.BEAR_OFF
-            return MoveState.DEFAULT
+        def off(
+            position: Position, point: int, pips: int
+        ) -> Tuple[Optional[Position], Optional[int]]:
+            """Try to move a checker in the player's home board and return the new position and destination."""
+            if position.board_points[point] > 0:
+                destination: int = point - pips
+                if destination < 0:
+                    checkers_on_higher_points: int = sum(player_home(position)[point + 1 : pips])
+                    if (destination == -1 or checkers_on_higher_points == 0):
+                        return position.apply_move(point, None), None
+                elif position.board_points[destination] >= -1:
+                    return position.apply_move(point, destination), destination
+            return None, None
 
-        def try_default(position: Position, source: int, pips: int) -> Optional[Move]:
-            """Try to move a checker from one point to another and return the move if valid."""
-            if position.board_points[source] > 0:
-                destination: int = source - pips
-                if destination > 0 and position.board_points[destination] > -2:
-                    return Move(pips, source, destination)
-            return None
+        def move(
+            position: Position, point: int, pips: int
+        ) -> Tuple[Optional[Position], Optional[int]]:
+            """Try to move a checker and return the new position and destination."""
+            if position.board_points[point] > 0:
+                destination: int = point - pips
+                if destination >= 0 and position.board_points[destination] >= -1:
+                    return position.apply_move(point, destination), destination
+            return None, None
 
-        def try_enter_from_bar(position: Position, pips: int) -> Optional[Move]:
-            """Try to move a checker from the bar to a point and return the move if valid."""
-            destination: int = POINTS - (pips - 1)
-            if position.board_points[destination] > -2:
-                return Move(pips, None, destination)
-            return None
+        def generate(
+            position: Position,
+            dice: Tuple[int, ...],
+            die: int = 0,
+            moves: Tuple[Move, ...] = (),
+            plays: List[Play] = [],
+        ) -> List[Play]:
+            """Generate and return all plays."""
+            new_position: Optional[Position]
+            destination: Optional[int]
+            point: int
+            num_checkers: int
+            pips: int
 
-        def try_bear_off(position: Position, source: int, pips: int) -> Optional[Move]:
-            """Try to bear off a checker or move a checker from one point to another and return the move if valid."""
-            if position.board_points[source] > 0:
-                destination: int = source - pips
-                if destination == 0:
-                    return Move(pips, source, None)
-                elif destination < 0:
-                    if sum(get_player_home(position)[source:]) == 0:
-                        return Move(pips, source, None)
+            if die < len(dice):
+                pips = dice[die]
+
+                if position.player_bar > 0:
+                    new_position, destination = enter(position, pips)
+                    if new_position:
+                        generate(
+                            new_position,
+                            dice,
+                            die + 1,
+                            moves + (Move(pips, None, destination),),
+                            plays,
+                        )
+                elif sum(player_home(position)) + position.player_off == CHECKERS:
+                    for point, num_checkers in enumerate(
+                        position.board_points[:POINTS_PER_QUADRANT]
+                    ):
+                        new_position, destination = off(position, point, pips)
+                        if new_position:
+                            generate(
+                                new_position,
+                                dice,
+                                die + 1,
+                                moves + (Move(pips, point, destination),),
+                                plays,
+                            )
                 else:
-                    return try_default(position, source, pips)
-            return None
+                    for point, num_checkers in enumerate(position.board_points):
+                        new_position, destination = move(position, point, pips)
+                        if new_position:
+                            generate(
+                                new_position,
+                                dice,
+                                die + 1,
+                                moves + (Move(pips, point, destination),),
+                                plays,
+                            )
 
-        def append_plays(
-            plays: List[Play], subplays: List[Play], move: Move, new_position: Position
-        ) -> List[Play]:
-            """Append subplays if any exist and return an updated list of plays."""
-            if subplays:
-                for play in subplays:
-                    plays.append(Play((move,) + play.moves, play.position))
-            else:
-                plays.append(Play((move,), new_position))
+            if len(moves) > 0:
+                plays.append(Play(moves, position))
+
             return plays
-
-        @functools.lru_cache()
-        def generate(position: Position, dice: Tuple[int, ...]) -> List[Play]:
-            """Generate legal plays and return the list of plays."""
-
-            def generate_subplays(
-                plays: List[Play], position: Position, dice: Tuple[int, ...], move: Move
-            ) -> List[Play]:
-                """Generate subplays and return the updated list of plays."""
-                new_position: Position = position.apply_move(
-                    move.source, move.destination
-                )
-                subplays: List[Play] = generate(new_position, dice[1:])
-                plays = append_plays(plays, subplays, move, new_position)
-                return plays
-
-            plays: List[Play] = []
-
-            if dice:
-                pips: int = dice[0]
-
-                move_state: MoveState = get_move_state(position)
-
-                move: Optional[Move] = None
-                if move_state is MoveState.DEFAULT:
-                    for source in range(POINTS - 1, -1, -1):
-                        move = try_default(position, source, pips)
-                        if move:
-                            plays = generate_subplays(plays, position, dice, move)
-                elif move_state is MoveState.ENTER_FROM_BAR:
-                    move = try_enter_from_bar(position, pips)
-                    if move:
-                        plays = generate_subplays(plays, position, dice, move)
-                elif move_state is MoveState.BEAR_OFF:
-                    for source in range(POINTS_PER_QUADRANT - 1, -1, -1):
-                        move = try_bear_off(position, source, pips)
-                        if move:
-                            plays = generate_subplays(plays, position, dice, move)
-            return plays
-
-        def remove_smaller(plays: List[Play], max_play: int) -> List[Play]:
-            """Return a list of plays that use the maximum number of moves."""
-            return list(filter(lambda p: len(p.moves) == max_play, plays))
-
-        def remove_lower(
-            plays: List[Play], dice: Tuple[int, ...], max_play: int
-        ) -> List[Play]:
-            """Return a list of plays that most pips."""
-            if max_play == 1:
-                higher_die: int = max(dice)
-                higher_plays: List[Play] = list(
-                    filter(lambda p: p.moves[0].pips == higher_die, plays)
-                )
-                if higher_plays:
-                    return higher_plays
-            return plays
-
-        def remove_duplicate(plays: List[Play]) -> List[Play]:
-            """Return a list of plays that result in unique board positions."""
-            key_func: Callable = lambda p: hash(p.position)
-            plays = sorted(plays, key=key_func)
-            return list(
-                map(
-                    next,
-                    map(operator.itemgetter(1), itertools.groupby(plays, key_func)),
-                )
-            )
 
         doubles: bool = self.match.dice[0] == self.match.dice[1]
         dice: Tuple[int, ...] = self.match.dice * 2 if doubles else self.match.dice
 
         plays: List[Play] = generate(self.position, dice)
         if not doubles:
-            plays += generate(self.position, tuple(reversed(dice)))
+            plays += generate(self.position, dice[::-1])
 
-        max_play: int = max(len(p.moves) for p in plays)
-        plays = remove_smaller(plays, max_play)
-        if not doubles:
-            plays = remove_lower(plays, dice, max_play)
-        plays = remove_duplicate(plays)
+        max_moves: int = max(len(p.moves) for p in plays)
+        if max_moves == 1:
+            max_pips: int = max(dice)
+            higher_plays: List[Play] = list(
+                filter(lambda p: p.moves[0].pips == max_pips, plays)
+            )
+            if higher_plays:
+                plays = higher_plays
+        else:
+            plays = list(filter(lambda p: len(p.moves) == max_moves, plays))
+
+        key_func: Callable = lambda p: hash(p.position)
+        plays = sorted(plays, key=key_func)
+        plays = list(
+            map(next, map(operator.itemgetter(1), itertools.groupby(plays, key_func)),)
+        )
 
         return plays
 
@@ -240,10 +224,13 @@ class Backgammon:
         for source, destination in moves:
             new_position = new_position.apply_move(source, destination)
 
+        # print(new_position)
+
         legal_plays: List[Play] = self.generate_plays()
 
         if new_position in [play.position for play in legal_plays]:
             self.position = new_position
+            # print(self.position)
             if self.position.player_off == CHECKERS:
                 self.match.game_state = GameState.GAME_OVER
         else:
@@ -265,10 +252,7 @@ class Backgammon:
 
     def to_json(self) -> str:
         return json.dumps(
-            {
-                "position": self.position.__dict__,
-                "match": self.match.__dict__,
-            }
+            {"position": self.position.__dict__, "match": self.match.__dict__,}
         )
 
     def encode(self) -> str:
