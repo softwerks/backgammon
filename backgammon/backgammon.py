@@ -66,46 +66,6 @@ class Backgammon:
     def generate_plays(self) -> List[Play]:
         """Generate and return legal plays."""
 
-        def enter(
-            position: Position, pips: int
-        ) -> Tuple[Optional[Position], Optional[int]]:
-            """Try to enter from the bar and return the new position and destination."""
-            destination: int = POINTS - pips
-            if position.board_points[destination] >= -1:
-                return position.apply_move(None, destination), destination
-            return None, None
-
-        def player_home(position: Position) -> Tuple[int, ...]:
-            """Return checkers in the player's home board."""
-            home_board: Tuple[int, ...] = position.board_points[:POINTS_PER_QUADRANT]
-            return tuple(point if point > 0 else 0 for point in home_board)
-
-        def off(
-            position: Position, point: int, pips: int
-        ) -> Tuple[Optional[Position], Optional[int]]:
-            """Try to move a checker in the player's home board and return the new position and destination."""
-            if position.board_points[point] > 0:
-                destination: int = point - pips
-                if destination < 0:
-                    checkers_on_higher_points: int = sum(
-                        player_home(position)[point + 1 : pips]
-                    )
-                    if destination == -1 or checkers_on_higher_points == 0:
-                        return position.apply_move(point, None), None
-                elif position.board_points[destination] >= -1:
-                    return position.apply_move(point, destination), destination
-            return None, None
-
-        def move(
-            position: Position, point: int, pips: int
-        ) -> Tuple[Optional[Position], Optional[int]]:
-            """Try to move a checker and return the new position and destination."""
-            if position.board_points[point] > 0:
-                destination: int = point - pips
-                if destination >= 0 and position.board_points[destination] >= -1:
-                    return position.apply_move(point, destination), destination
-            return None, None
-
         def generate(
             position: Position,
             dice: Tuple[int, ...],
@@ -124,7 +84,7 @@ class Backgammon:
                 pips = dice[die]
 
                 if position.player_bar > 0:
-                    new_position, destination = enter(position, pips)
+                    new_position, destination = position.enter(pips)
                     if new_position:
                         generate(
                             new_position,
@@ -133,11 +93,11 @@ class Backgammon:
                             moves + (Move(pips, None, destination),),
                             plays,
                         )
-                elif sum(player_home(position)) + position.player_off == CHECKERS:
+                elif sum(position.player_home()) + position.player_off == CHECKERS:
                     for point, num_checkers in enumerate(
                         position.board_points[:POINTS_PER_QUADRANT]
                     ):
-                        new_position, destination = off(position, point, pips)
+                        new_position, destination = position.off(point, pips)
                         if new_position:
                             generate(
                                 new_position,
@@ -148,7 +108,7 @@ class Backgammon:
                             )
                 else:
                     for point, num_checkers in enumerate(position.board_points):
-                        new_position, destination = move(position, point, pips)
+                        new_position, destination = position.move(point, pips)
                         if new_position:
                             generate(
                                 new_position,

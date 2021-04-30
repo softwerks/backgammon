@@ -23,6 +23,9 @@ import dataclasses
 import struct
 from typing import List, Optional, Tuple
 
+POINTS = 24
+POINTS_PER_QUADRANT = int(POINTS / 4)
+
 
 @dataclasses.dataclass(frozen=True)
 class Position:
@@ -31,6 +34,40 @@ class Position:
     player_off: int
     opponent_bar: int
     opponent_off: int
+
+    def enter(self, pips: int) -> Tuple[Optional["Position"], Optional[int]]:
+        """Try to enter from the bar and return the new position and destination."""
+        destination: int = POINTS - pips
+        if self.board_points[destination] >= -1:
+            return self.apply_move(None, destination), destination
+        return None, None
+
+    def player_home(self) -> Tuple[int, ...]:
+        """Return checkers in the player's home board."""
+        home_board: Tuple[int, ...] = self.board_points[:POINTS_PER_QUADRANT]
+        return tuple(point if point > 0 else 0 for point in home_board)
+
+    def off(self, point: int, pips: int) -> Tuple[Optional["Position"], Optional[int]]:
+        """Try to move a checker in the player's home board and return the new position and destination."""
+        if self.board_points[point] > 0:
+            destination: int = point - pips
+            if destination < 0:
+                checkers_on_higher_points: int = sum(
+                    self.player_home()[point + 1 : pips]
+                )
+                if destination == -1 or checkers_on_higher_points == 0:
+                    return self.apply_move(point, None), None
+            elif self.board_points[destination] >= -1:
+                return self.apply_move(point, destination), destination
+        return None, None
+
+    def move(self, point: int, pips: int) -> Tuple[Optional["Position"], Optional[int]]:
+        """Try to move a checker and return the new position and destination."""
+        if self.board_points[point] > 0:
+            destination: int = point - pips
+            if destination >= 0 and self.board_points[destination] >= -1:
+                return self.apply_move(point, destination), destination
+        return None, None
 
     def apply_move(
         self, source: Optional[int], destination: Optional[int]
