@@ -60,12 +60,12 @@ class Match:
     player_1_score: int
 
     def swap_players(self) -> None:
-        if self.player is Player.ZERO:
-            self.player = Player.ONE
-            self.turn = Player.ONE
-        else:
-            self.player = Player.ZERO
-            self.turn = Player.ZERO
+        self.player = self.turn = (
+            Player.ZERO if self.player is Player.ONE else Player.ONE
+        )
+
+    def swap_turn(self) -> None:
+        self.turn = Player.ZERO if self.turn is Player.ONE else Player.ONE
 
     def reset_dice(self) -> None:
         self.dice = (0, 0)
@@ -108,7 +108,7 @@ class Match:
                 f"{self.player.value:b}",
                 f"{self.crawford:b}",
                 f"{self.game_state.value:03b}"[::-1],
-                f"{self.turn.value:b}",
+                f"{self.turn:b}",
                 f"{self.double:b}",
                 f"{self.resign.value:02b}"[::-1],
                 f"{self.dice[0]:03b}"[::-1],

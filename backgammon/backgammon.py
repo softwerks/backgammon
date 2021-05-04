@@ -186,19 +186,43 @@ class Backgammon:
         for source, destination in moves:
             new_position = new_position.apply_move(source, destination)
 
-        # print(new_position)
-
         legal_plays: List[Play] = self.generate_plays()
 
         if new_position in [play.position for play in legal_plays]:
             self.position = new_position
-            # print(self.position)
+
             if self.position.player_off == CHECKERS:
                 self.match.game_state = GameState.GAME_OVER
         else:
             position_id: str = self.position.encode()
             match_id: str = self.match.encode()
             raise BackgammonError(f"Invalid move: {position_id}:{match_id} {moves}")
+
+    def double(self) -> None:
+        if self.match.dice != (0, 0):
+            raise BackgammonError("Cannot double: dice have been rolled")
+        elif (
+            self.match.cube_holder is not Player.CENTERED
+            and self.match.cube_holder is not self.match.player
+        ):
+            raise BackgammonError("Cannot double: not cube holder")
+        elif self.match.double:
+            raise BackgammonError("Cannot double: already doubled")
+
+        self.match.double = True
+        self.match.swap_turn()
+
+    def accept_double(self) -> None:
+        if self.match.double:
+            self.match.double = False
+            self.match.cube_value *= 2
+            self.match.cube_holder = Player.ZERO if self.match.turn is Player.ZERO else Player.ONE
+            self.match.swap_turn()
+        else:
+            raise BackgammonError("Cannot accept double: double not offered")
+
+    def reject_double(self) -> None:
+        pass
 
     def skip(self) -> None:
         num_plays: int = len(self.generate_plays())
