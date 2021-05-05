@@ -83,6 +83,16 @@ class Match:
         if self.player_0_score >= self.length or self.player_1_score >= self.length:
             self.game_state = GameState.DROPPED_CUBE
 
+    def update_score(self, multiplier: int) -> None:
+        points: int = self.cube_value * multiplier
+        if self.player is Player.ZERO:
+            self.player_0_score += points
+        else:
+            self.player_1_score += points
+        self.double = False
+        if self.player_0_score >= self.length or self.player_1_score >= self.length:
+            self.game_state = GameState.GAME_OVER
+
     @staticmethod
     def decode(match_id: str) -> "Match":
         """Decode a match ID and return a Match.

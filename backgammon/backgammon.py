@@ -192,7 +192,18 @@ class Backgammon:
             self.position = new_position
 
             if self.position.player_off == CHECKERS:
-                self.match.game_state = GameState.GAME_OVER
+                multiplier: int = 1
+                if self.position.opponent_off == 0:
+                    if self.position.opponent_bar > 0 or sum(self.position.board_points[:POINTS_PER_QUADRANT]) != 0:
+                        multiplier = 3
+                    else:
+                        multiplier = 2
+                self.match.update_score(multiplier)
+                if self.match.game_state is GameState.PLAYING:
+                    self.match.reset_cube()
+                    self.position = Position.decode(STARTING_POSITION_ID)
+                    self.first_roll()
+
         else:
             position_id: str = self.position.encode()
             match_id: str = self.match.encode()
