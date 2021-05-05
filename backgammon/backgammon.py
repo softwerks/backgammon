@@ -224,7 +224,7 @@ class Backgammon:
     def reject_double(self) -> None:
         if self.match.double:
             self.match.drop_cube()
-            if self.match.game_state is not GameState.GAME_OVER:
+            if self.match.game_state is GameState.PLAYING:
                 self.match.reset_cube()
                 self.position = Position.decode(STARTING_POSITION_ID)
                 self.first_roll()

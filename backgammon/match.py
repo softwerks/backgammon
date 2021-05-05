@@ -81,7 +81,7 @@ class Match:
             self.player_1_score += self.cube_value
         self.double = False
         if self.player_0_score >= self.length or self.player_1_score >= self.length:
-            self.game_state = GameState.GAME_OVER
+            self.game_state = GameState.DROPPED_CUBE
 
     @staticmethod
     def decode(match_id: str) -> "Match":
