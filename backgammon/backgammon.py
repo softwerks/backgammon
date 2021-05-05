@@ -216,7 +216,9 @@ class Backgammon:
         if self.match.double:
             self.match.double = False
             self.match.cube_value *= 2
-            self.match.cube_holder = Player.ZERO if self.match.turn is Player.ZERO else Player.ONE
+            self.match.cube_holder = (
+                Player.ZERO if self.match.turn is Player.ZERO else Player.ONE
+            )
             self.match.swap_turn()
         else:
             raise BackgammonError("Cannot accept double: double not offered")
