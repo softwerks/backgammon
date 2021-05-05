@@ -222,7 +222,14 @@ class Backgammon:
             raise BackgammonError("Cannot accept double: double not offered")
 
     def reject_double(self) -> None:
-        pass
+        if self.match.double:
+            self.match.drop_cube()
+            if self.match.game_state is not GameState.GAME_OVER:
+                self.match.reset_cube()
+                self.position = Position.decode(STARTING_POSITION_ID)
+                self.first_roll()
+        else:
+            raise BackgammonError("Cannot reject double: double not offered")
 
     def skip(self) -> None:
         num_plays: int = len(self.generate_plays())

@@ -70,6 +70,19 @@ class Match:
     def reset_dice(self) -> None:
         self.dice = (0, 0)
 
+    def reset_cube(self) -> None:
+        self.cube_holder = Player.CENTERED
+        self.cube_value = 1
+
+    def drop_cube(self) -> None:
+        if self.player is Player.ZERO:
+            self.player_0_score += self.cube_value
+        else:
+            self.player_1_score += self.cube_value
+        self.double = False
+        if self.player_0_score >= self.length or self.player_1_score >= self.length:
+            self.game_state = GameState.GAME_OVER
+
     @staticmethod
     def decode(match_id: str) -> "Match":
         """Decode a match ID and return a Match.
