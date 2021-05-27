@@ -38,13 +38,16 @@ class Position:
     def enter(self, pips: int) -> Tuple[Optional["Position"], Optional[int]]:
         """Try to enter from the bar and return the new position and destination."""
         destination: int = POINTS - pips
+
         if self.board_points[destination] >= -1:
             return self.apply_move(None, destination), destination
+
         return None, None
 
     def player_home(self) -> Tuple[int, ...]:
         """Return checkers in the player's home board."""
         home_board: Tuple[int, ...] = self.board_points[:POINTS_PER_QUADRANT]
+
         return tuple(point if point > 0 else 0 for point in home_board)
 
     def off(self, point: int, pips: int) -> Tuple[Optional["Position"], Optional[int]]:
@@ -59,6 +62,7 @@ class Position:
                     return self.apply_move(point, None), None
             elif self.board_points[destination] >= -1:
                 return self.apply_move(point, destination), destination
+
         return None, None
 
     def move(self, point: int, pips: int) -> Tuple[Optional["Position"], Optional[int]]:
@@ -67,6 +71,7 @@ class Position:
             destination: int = point - pips
             if destination >= 0 and self.board_points[destination] >= -1:
                 return self.apply_move(point, destination), destination
+
         return None, None
 
     def apply_move(
@@ -107,100 +112,103 @@ class Position:
             self.player_off,
         )
 
-    @staticmethod
-    def decode(position_id: str) -> "Position":
-        """Decode a position ID and return a Position.
-
-        >>> Position.decode('4HPwATDgc/ABMA')
-        Position(board_points=(-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2), player_bar=0, player_off=0, opponent_bar=0, opponent_off=0)
-        """
-
-        def key_from_id(position_id: str) -> str:
-            """Decode the the position ID and return the key (bit string)."""
-            position_bytes: bytes = base64.b64decode(position_id + "==")
-            position_key: str = "".join(
-                [format(b, "08b")[::-1] for b in position_bytes]
-            )
-            return position_key
-
-        def checkers_from_key(position_key: str) -> Tuple[int, ...]:
-            """Return a list of checkers."""
-            return tuple(
-                sum(int(n) for n in pos) for pos in position_key.split("0")[:50]
-            )
-
-        def merge_points(
-            player: Tuple[int, ...], opponent: Tuple[int, ...]
-        ) -> Tuple[int, ...]:
-            """Merge player and opponent board positions and return the combined points."""
-            return tuple(
-                i + j for i, j in zip(player, tuple(map(lambda n: -n, opponent[::-1])))
-            )
-
-        position_key: str = key_from_id(position_id)
-
-        checkers: Tuple[int, ...] = checkers_from_key(position_key)
-
-        player_points: Tuple[int, ...] = checkers[25:49]
-        opponent_points: Tuple[int, ...] = checkers[:24]
-        board_points: Tuple[int, ...] = merge_points(player_points, opponent_points)
-
-        player_bar: int = checkers[49]
-        player_off: int = abs(15 - sum(player_points) - player_bar)
-
-        opponent_bar: int = -checkers[24]
-        opponent_off: int = -abs(15 - sum(opponent_points) - abs(opponent_bar))
-
-        return Position(
-            board_points=board_points,
-            player_bar=player_bar,
-            player_off=player_off,
-            opponent_bar=opponent_bar,
-            opponent_off=opponent_off,
-        )
-
     def encode(self) -> str:
         """Encode the position and return a position ID.
 
         >>> position = Position(board_points=(-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2), player_bar=0, player_off=0, opponent_bar=0, opponent_off=0)
         >>> position.encode()
         '4HPwATDgc/ABMA'
-
         """
+        player_points, opponent_points = _unmerge_points(self.board_points)
+        checkers: Tuple[int, ...] = (
+            opponent_points + (self.opponent_bar,) + player_points + (self.player_bar,)
+        )
 
-        def unmerge_points(
-            board_points: Tuple[int, ...]
-        ) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
-            """Return player and opponent board positions starting from their respective ace points."""
-            player: Tuple[int, ...] = tuple(
-                map(lambda n: 0 if n < 0 else n, board_points,)
-            )
-            opponent: Tuple[int, ...] = tuple(
-                map(lambda n: 0 if n > 0 else -n, board_points[::-1],)
-            )
-            return player, opponent
+        position_key: str = _key_from_checkers(checkers)
 
-        def key_from_checkers(checkers: Tuple[int, ...]) -> str:
-            """Return a position key (bit string)."""
-            return "".join("1" * n + "0" for n in checkers).ljust(80, "0")
-
-        def id_from_key(position_key: str) -> str:
-            """Encode the position key and return the ID."""
-            byte_strings: Tuple[str, ...] = tuple(
-                position_key[i : i + 8][::-1] for i in range(0, len(position_key), 8)
-            )
-            position_bytes: bytes = struct.pack(
-                "10B", *(int(b, 2) for b in byte_strings)
-            )
-            return base64.b64encode(position_bytes).decode()[:-2]
-
-        player_points, opponent_points = unmerge_points(self.board_points)
-        checkers: Tuple[int, ...] = opponent_points + (
-            self.opponent_bar,
-        ) + player_points + (self.player_bar,)
-
-        position_key: str = key_from_checkers(checkers)
-
-        position_id: str = id_from_key(position_key)
+        position_id: str = _id_from_key(position_key)
 
         return position_id
+
+
+def _unmerge_points(
+    board_points: Tuple[int, ...]
+) -> Tuple[Tuple[int, ...], Tuple[int, ...]]:
+    """Return player and opponent board positions starting from their respective ace points."""
+    player: Tuple[int, ...] = tuple(
+        map(
+            lambda n: 0 if n < 0 else n,
+            board_points,
+        )
+    )
+    opponent: Tuple[int, ...] = tuple(
+        map(
+            lambda n: 0 if n > 0 else -n,
+            board_points[::-1],
+        )
+    )
+    return player, opponent
+
+
+def _key_from_checkers(checkers: Tuple[int, ...]) -> str:
+    """Return a position key (bit string)."""
+    return "".join("1" * n + "0" for n in checkers).ljust(80, "0")
+
+
+def _id_from_key(position_key: str) -> str:
+    """Encode the position key and return the ID."""
+    byte_strings: Tuple[str, ...] = tuple(
+        position_key[i : i + 8][::-1] for i in range(0, len(position_key), 8)
+    )
+    position_bytes: bytes = struct.pack("10B", *(int(b, 2) for b in byte_strings))
+    return base64.b64encode(position_bytes).decode()[:-2]
+
+
+def decode(position_id: str) -> Position:
+    """Decode a position ID and return a Position.
+
+    >>> decode('4HPwATDgc/ABMA')
+    Position(board_points=(-2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 5, 0, 0, 0, -3, 0, -5, 0, 0, 0, 0, 2), player_bar=0, player_off=0, opponent_bar=0, opponent_off=0)
+    """
+    position_key: str = _key_from_id(position_id)
+
+    checkers: Tuple[int, ...] = _checkers_from_key(position_key)
+
+    player_points: Tuple[int, ...] = checkers[25:49]
+    opponent_points: Tuple[int, ...] = checkers[:24]
+    board_points: Tuple[int, ...] = _merge_points(player_points, opponent_points)
+
+    player_bar: int = checkers[49]
+    player_off: int = abs(15 - sum(player_points) - player_bar)
+
+    opponent_bar: int = checkers[24]
+    opponent_off: int = abs(15 - sum(opponent_points) - abs(opponent_bar))
+
+    return Position(
+        board_points=board_points,
+        player_bar=player_bar,
+        player_off=player_off,
+        opponent_bar=opponent_bar,
+        opponent_off=opponent_off,
+    )
+
+
+def _key_from_id(position_id: str) -> str:
+    """Decode the the position ID and return the key (bit string)."""
+    position_bytes: bytes = base64.b64decode(position_id + "==")
+    position_key: str = "".join([format(b, "08b")[::-1] for b in position_bytes])
+    return position_key
+
+
+def _checkers_from_key(position_key: str) -> Tuple[int, ...]:
+    """Return a list of checkers."""
+    return tuple(sum(int(n) for n in pos) for pos in position_key.split("0")[:50])
+
+
+def _merge_points(
+    player: Tuple[int, ...], opponent: Tuple[int, ...]
+) -> Tuple[int, ...]:
+    """Merge player and opponent board positions and return the combined points."""
+    return tuple(
+        i + j for i, j in zip(player, tuple(map(lambda n: -n, opponent[::-1])))
+    )

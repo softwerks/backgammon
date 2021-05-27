@@ -20,7 +20,9 @@ import random
 from typing import Callable, List, NamedTuple, Optional, Tuple, Set
 
 from backgammon.match import Player, GameState, Resign, Match
-from backgammon.position import Position
+import backgammon.position
+
+PositionType = backgammon.position.Position
 
 STARTING_POSITION_ID = "4HPwATDgc/ABMA"
 STARTING_MATCH_ID = "cAgAAAAAAAAA"
@@ -53,28 +55,28 @@ class Move(NamedTuple):
 
 class Play(NamedTuple):
     moves: Tuple[Move, ...]
-    position: Position
+    position: PositionType
 
 
 class Backgammon:
     def __init__(
         self, position_id: str = STARTING_POSITION_ID, match_id: str = STARTING_MATCH_ID
     ):
-        self.position: Position = Position.decode(position_id)
+        self.position: PositionType = backgammon.position.decode(position_id)
         self.match: Match = Match.decode(match_id)
 
     def generate_plays(self) -> List[Play]:
         """Generate and return legal plays."""
 
         def generate(
-            position: Position,
+            position: PositionType,
             dice: Tuple[int, ...],
             die: int = 0,
             moves: Tuple[Move, ...] = (),
             plays: List[Play] = [],
         ) -> List[Play]:
             """Generate and return all plays."""
-            new_position: Optional[Position]
+            new_position: Optional[PositionType]
             destination: Optional[int]
             point: int
             num_checkers: int
@@ -144,7 +146,10 @@ class Backgammon:
         key_func: Callable = lambda p: hash(p.position)
         plays = sorted(plays, key=key_func)
         plays = list(
-            map(next, map(operator.itemgetter(1), itertools.groupby(plays, key_func)),)
+            map(
+                next,
+                map(operator.itemgetter(1), itertools.groupby(plays, key_func)),
+            )
         )
 
         return plays
@@ -182,7 +187,7 @@ class Backgammon:
 
     def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]], ...]) -> None:
         """Excecute a play, a sequence of moves."""
-        new_position: Position = self.position
+        new_position: PositionType = self.position
         for source, destination in moves:
             new_position = new_position.apply_move(source, destination)
 
@@ -194,14 +199,17 @@ class Backgammon:
             if self.position.player_off == CHECKERS:
                 multiplier: int = 1
                 if self.position.opponent_off == 0:
-                    if self.position.opponent_bar > 0 or sum(self.position.board_points[:POINTS_PER_QUADRANT]) != 0:
+                    if (
+                        self.position.opponent_bar > 0
+                        or sum(self.position.board_points[:POINTS_PER_QUADRANT]) != 0
+                    ):
                         multiplier = 3
                     else:
                         multiplier = 2
                 self.match.update_score(multiplier)
                 if self.match.game_state is GameState.PLAYING:
                     self.match.reset_cube()
-                    self.position = Position.decode(STARTING_POSITION_ID)
+                    self.position = backgammon.position.decode(STARTING_POSITION_ID)
                     self.first_roll()
 
         else:
@@ -239,7 +247,7 @@ class Backgammon:
             self.match.drop_cube()
             if self.match.game_state is GameState.PLAYING:
                 self.match.reset_cube()
-                self.position = Position.decode(STARTING_POSITION_ID)
+                self.position = backgammon.position.decode(STARTING_POSITION_ID)
                 self.first_roll()
         else:
             raise BackgammonError("Cannot reject double: double not offered")
@@ -258,7 +266,10 @@ class Backgammon:
 
     def to_json(self) -> str:
         return json.dumps(
-            {"position": self.position.__dict__, "match": self.match.__dict__,}
+            {
+                "position": self.position.__dict__,
+                "match": self.match.__dict__,
+            }
         )
 
     def encode(self) -> str:
@@ -311,7 +322,12 @@ class Backgammon:
         points: List[List[str]] = checkers(*split(self.position.board_points))
 
         bar: List[List[str]] = checkers(
-            *split([self.position.player_bar, self.position.opponent_bar,])
+            *split(
+                [
+                    self.position.player_bar,
+                    -self.position.opponent_bar,
+                ]
+            )
         )
 
         ascii_board: str = ""
