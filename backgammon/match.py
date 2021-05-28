@@ -93,30 +93,6 @@ class Match:
         if self.player_0_score >= self.length or self.player_1_score >= self.length:
             self.game_state = GameState.GAME_OVER
 
-    @staticmethod
-    def decode(match_id: str) -> "Match":
-        """Decode a match ID and return a Match.
-
-        >>> Match.decode("QYkqASAAIAAA")
-        Match(cube_value=2, cube_holder=<Player.ZERO: 0>, player=<Player.ONE: 1>, crawford=False, game_state=<GameState.PLAYING: 1>, turn=<Player.ONE: 1>, double=False, resign=<Resign.NONE: 0>, dice=(5, 2), length=9, player_0_score=2, player_1_score=4)
-        """
-        match_bytes: bytes = base64.b64decode(match_id)
-        match_key: str = "".join([format(b, "08b")[::-1] for b in match_bytes])
-        return Match(
-            cube_value=2 ** int(match_key[0:4][::-1], 2),
-            cube_holder=Player(int(match_key[4:6][::-1], 2)),
-            player=Player(int(match_key[6])),
-            crawford=bool(int(match_key[7])),
-            game_state=GameState(int(match_key[8:11][::-1], 2)),
-            turn=Player(int(match_key[11])),
-            double=bool(int(match_key[12])),
-            resign=Resign(int(match_key[13:15][::-1], 2)),
-            dice=(int(match_key[15:18][::-1], 2), int(match_key[18:21][::-1], 2)),
-            length=int(match_key[21:36][::-1], 2),
-            player_0_score=int(match_key[36:51][::-1], 2),
-            player_1_score=int(match_key[51:66][::-1], 2),
-        )
-
     def encode(self) -> str:
         """Encode the match and return a match ID.
 
@@ -146,3 +122,27 @@ class Match:
         )
         match_bytes: bytes = struct.pack("9B", *(int(b, 2) for b in byte_strings))
         return base64.b64encode(bytes(match_bytes)).decode()
+
+
+def decode(match_id: str) -> Match:
+    """Decode a match ID and return a Match.
+
+    >>> decode("QYkqASAAIAAA")
+    Match(cube_value=2, cube_holder=<Player.ZERO: 0>, player=<Player.ONE: 1>, crawford=False, game_state=<GameState.PLAYING: 1>, turn=<Player.ONE: 1>, double=False, resign=<Resign.NONE: 0>, dice=(5, 2), length=9, player_0_score=2, player_1_score=4)
+    """
+    match_bytes: bytes = base64.b64decode(match_id)
+    match_key: str = "".join([format(b, "08b")[::-1] for b in match_bytes])
+    return Match(
+        cube_value=2 ** int(match_key[0:4][::-1], 2),
+        cube_holder=Player(int(match_key[4:6][::-1], 2)),
+        player=Player(int(match_key[6])),
+        crawford=bool(int(match_key[7])),
+        game_state=GameState(int(match_key[8:11][::-1], 2)),
+        turn=Player(int(match_key[11])),
+        double=bool(int(match_key[12])),
+        resign=Resign(int(match_key[13:15][::-1], 2)),
+        dice=(int(match_key[15:18][::-1], 2), int(match_key[18:21][::-1], 2)),
+        length=int(match_key[21:36][::-1], 2),
+        player_0_score=int(match_key[36:51][::-1], 2),
+        player_1_score=int(match_key[51:66][::-1], 2),
+    )

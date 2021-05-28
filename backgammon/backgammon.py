@@ -19,9 +19,11 @@ import operator
 import random
 from typing import Callable, List, NamedTuple, Optional, Tuple, Set
 
-from backgammon.match import Player, GameState, Resign, Match
+import backgammon.match
+from backgammon.match import Player, GameState, Resign
 import backgammon.position
 
+MatchType = backgammon.match.Match
 PositionType = backgammon.position.Position
 
 STARTING_POSITION_ID = "4HPwATDgc/ABMA"
@@ -63,7 +65,7 @@ class Backgammon:
         self, position_id: str = STARTING_POSITION_ID, match_id: str = STARTING_MATCH_ID
     ):
         self.position: PositionType = backgammon.position.decode(position_id)
-        self.match: Match = Match.decode(match_id)
+        self.match: MatchType = backgammon.match.decode(match_id)
 
     def generate_plays(self) -> List[Play]:
         """Generate and return legal plays."""
