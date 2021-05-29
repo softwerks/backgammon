@@ -18,6 +18,42 @@ from backgammon import match
 
 
 class TestMatch(unittest.TestCase):
+    def test_swap_players(self):
+        self.assertEqual(
+            match.decode("cImxABAAEAAA").swap_players(), match.decode("MIGxABAAEAAA")
+        )
+
+    def test_swap_turn(self):
+        self.assertEqual(
+            match.decode("cImxABAAEAAA").swap_turn(), match.decode("cIGxABAAEAAA")
+        )
+
+    def test_reset_dice(self):
+        self.assertEqual(
+            match.decode("cImxABAAEAAA").reset_dice(), match.decode("cAmgABAAEAAA")
+        )
+
+    def test_reset_cube(self):
+        self.assertEqual(
+            match.decode("QYmxABAAEAAA").reset_cube(), match.decode("cImxABAAEAAA")
+        )
+
+    def test_drop_cube(self):
+        self.assertEqual(
+            match.decode("cBFgABAACAAA").drop_cube(), match.decode("cAFgABAAEAAA")
+        )
+        self.assertEqual(
+            match.decode("ARlgABAAEAAA").drop_cube(), match.decode("AQxgADAAEAAA")
+        )
+
+    def test_update_score(self):
+        self.assertEqual(
+            match.decode("QYkqASAAIAAA").update_score(1), match.decode("QYkqASAAMAAA")
+        )
+        self.assertEqual(
+            match.decode("MIFlABAAEAAA").update_score(3), match.decode("MIJlAEAAEAAA")
+        )
+
     def test_encode(self):
         self.assertEqual(
             match.Match(
