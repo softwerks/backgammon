@@ -59,39 +59,56 @@ class Match:
     player_0_score: int
     player_1_score: int
 
-    def swap_players(self) -> None:
+    def swap_players(self) -> "Match":
         self.player = self.turn = (
             Player.ZERO if self.player is Player.ONE else Player.ONE
         )
 
-    def swap_turn(self) -> None:
+        return self
+
+    def swap_turn(self) -> "Match":
         self.turn = Player.ZERO if self.turn is Player.ONE else Player.ONE
 
-    def reset_dice(self) -> None:
+        return self
+
+    def reset_dice(self) -> "Match":
         self.dice = (0, 0)
 
-    def reset_cube(self) -> None:
+        return self
+
+    def reset_cube(self) -> "Match":
         self.cube_holder = Player.CENTERED
         self.cube_value = 1
 
-    def drop_cube(self) -> None:
+        return self
+
+    def drop_cube(self) -> "Match":
         if self.player is Player.ZERO:
             self.player_0_score += self.cube_value
         else:
             self.player_1_score += self.cube_value
+
         self.double = False
+
         if self.player_0_score >= self.length or self.player_1_score >= self.length:
             self.game_state = GameState.DROPPED_CUBE
 
-    def update_score(self, multiplier: int) -> None:
+        return self
+
+    def update_score(self, multiplier: int) -> "Match":
         points: int = self.cube_value * multiplier
+
         if self.player is Player.ZERO:
             self.player_0_score += points
         else:
             self.player_1_score += points
+
         self.double = False
+
         if self.player_0_score >= self.length or self.player_1_score >= self.length:
             self.game_state = GameState.GAME_OVER
+
+        return self
 
     def encode(self) -> str:
         """Encode the match and return a match ID.
