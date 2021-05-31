@@ -134,32 +134,35 @@ class Backgammon:
         if not doubles:
             plays += generate(self.position, dice[::-1])
 
-        max_moves: int = max(len(p.moves) for p in plays)
-        if max_moves == 1:
-            max_pips: int = max(dice)
-            higher_plays: List[Play] = list(
-                filter(lambda p: p.moves[0].pips == max_pips, plays)
-            )
-            if higher_plays:
-                plays = higher_plays
-        else:
-            plays = list(filter(lambda p: len(p.moves) == max_moves, plays))
+        if plays:
+            max_moves: int = max(len(p.moves) for p in plays)
+            if max_moves == 1:
+                max_pips: int = max(dice)
+                higher_plays: List[Play] = list(
+                    filter(lambda p: p.moves[0].pips == max_pips, plays)
+                )
+                if higher_plays:
+                    plays = higher_plays
+            else:
+                plays = list(filter(lambda p: len(p.moves) == max_moves, plays))
 
-        key_func: Callable = lambda p: hash(p.position)
-        plays = sorted(plays, key=key_func)
-        plays = list(
-            map(
-                next,
-                map(operator.itemgetter(1), itertools.groupby(plays, key_func)),
+            key_func: Callable = lambda p: hash(p.position)
+            plays = sorted(plays, key=key_func)
+            plays = list(
+                map(
+                    next,
+                    map(operator.itemgetter(1), itertools.groupby(plays, key_func)),
+                )
             )
-        )
 
         return plays
 
-    def start(self, length: int = 3) -> None:
+    def start(self, length: int = 3) -> "Backgammon":
         self.match.game_state = GameState.PLAYING
         self.match.length = length
         self.first_roll()
+
+        return self
 
     def roll(self) -> Tuple[int, int]:
         if self.match.dice != (0, 0):
@@ -219,7 +222,7 @@ class Backgammon:
             match_id: str = self.match.encode()
             raise BackgammonError(f"Invalid move: {position_id}:{match_id} {moves}")
 
-    def double(self) -> None:
+    def double(self) -> "Backgammon":
         if self.match.dice != (0, 0):
             raise BackgammonError("Cannot double: dice have been rolled")
         elif (
@@ -233,7 +236,9 @@ class Backgammon:
         self.match.double = True
         self.match.swap_turn()
 
-    def accept_double(self) -> None:
+        return self
+
+    def accept_double(self) -> "Backgammon":
         if self.match.double:
             self.match.double = False
             self.match.cube_value *= 2
@@ -244,7 +249,9 @@ class Backgammon:
         else:
             raise BackgammonError("Cannot accept double: double not offered")
 
-    def reject_double(self) -> None:
+        return self
+
+    def reject_double(self) -> "Backgammon":
         if self.match.double:
             self.match.drop_cube()
             if self.match.game_state is GameState.PLAYING:
@@ -254,25 +261,23 @@ class Backgammon:
         else:
             raise BackgammonError("Cannot reject double: double not offered")
 
-    def skip(self) -> None:
+        return self
+
+    def skip(self) -> "Backgammon":
         num_plays: int = len(self.generate_plays())
         if num_plays == 0:
             self.end_turn()
         else:
             raise BackgammonError(f"Cannot skip turn: {num_plays} possible plays")
 
-    def end_turn(self) -> None:
+        return self
+
+    def end_turn(self) -> "Backgammon":
         self.position = self.position.swap_players()
         self.match.swap_players()
         self.match.reset_dice()
 
-    def to_json(self) -> str:
-        return json.dumps(
-            {
-                "position": self.position.__dict__,
-                "match": self.match.__dict__,
-            }
-        )
+        return self
 
     def encode(self) -> str:
         return f"{self.position.encode()}:{self.match.encode()}"
