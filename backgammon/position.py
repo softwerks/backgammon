@@ -56,7 +56,7 @@ class Position:
             destination: int = point - pips
             if destination < 0:
                 checkers_on_higher_points: int = sum(
-                    self.player_home()[point + 1 : pips]
+                    self.player_home()[point + 1 : POINTS_PER_QUADRANT]
                 )
                 if destination == -1 or checkers_on_higher_points == 0:
                     return self.apply_move(point, None), None
