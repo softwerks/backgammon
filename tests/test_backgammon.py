@@ -45,8 +45,47 @@ class TestBackgammon(unittest.TestCase):
         self.assertEqual(p1.first_roll(), (3, 4))
         self.assertEqual(p1.encode(), "4HPwATDgc/ABMA:cIgRAAAAAAAA")
 
-    def test_play(self):
-        pass
+    @mock.patch("random.SystemRandom.randrange", side_effect=[2, 1, 1, 2])
+    def test_play(self, randrange_mock):
+        self.assertEqual(
+            backgammon.Backgammon("4NvBEQiYz+ABAw", "cAlqAAAAAAAE")
+            .play(((12, 8), (12, 10)))
+            .encode(),
+            "4NvBAUSYz5IBAw:cAlqAAAAAAAA",
+        )
+
+        self.assertEqual(
+            backgammon.Backgammon("CwAAiAIAAAAAAA", "cAluAAAAAAAE")
+            .play(((3, None), (2, None)))
+            .encode(),
+            "4HPwATDgc/ABMA:MAFlAAAACAAA",
+        )
+
+        self.assertEqual(
+            backgammon.Backgammon("2+4FAEAhAAAAAA", "cAlvAAAAAAAE")
+            .play(((4, None), (0, None)))
+            .encode(),
+            "2+4FAEAAAAAAAA:cApvAAAAGAAA",
+        )
+
+        self.assertEqual(
+            backgammon.Backgammon("2+4FAAQhAAAAAA", "cAlvAAAAAAAE")
+            .play(((4, None), (0, None)))
+            .encode(),
+            "2+4FAAQAAAAAAA:cApvAAAAGAAA",
+        )
+
+        self.assertEqual(
+            backgammon.Backgammon("2+4NAAAhAAAAAA", "cAlvAAAAAAAE")
+            .play(((4, None), (0, None)))
+            .encode(),
+            "4HPwATDgc/ABMA:cIloAAAAEAAA",
+        )
+
+        with self.assertRaises(backgammon.BackgammonError):
+            backgammon.Backgammon("4NvBEQiYz+ABAw", "cAlqAAAAAAAE").play(
+                ((12, 8), (19, 17))
+            )
 
     def test_double(self):
         with self.assertRaises(backgammon.BackgammonError):
