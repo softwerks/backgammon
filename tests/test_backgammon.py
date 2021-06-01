@@ -16,11 +16,117 @@ import unittest
 from unittest import mock
 
 from backgammon import backgammon
+from backgammon.backgammon import Play, Move
+from backgammon.position import Position
 
 
 class TestBackgammon(unittest.TestCase):
-    def test_generate_plays(self):
-        pass
+    # fmt: off
+    def test_bear_off(self):
+        # |      (4, 3)
+        # |       X  X     O |
+        # |       X  X     O |
+        # --6--5--4--3--2--1-+
+        self.assertEqual(
+            backgammon.Backgammon("AACAYQMAAAAAAA", "cAnuAAAAAAAE").generate_plays(),
+            [
+                Play(
+                    moves=(
+                        Move(pips=4, source=3, destination=None),
+                        Move(pips=3, source=2, destination=None),
+                    ),
+                    position=Position(
+                        board_points=(-2, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                        player_bar=0,
+                        player_off=13,
+                        opponent_bar=0,
+                        opponent_off=13,
+                    ),
+                )
+            ],
+        )
+
+        # |      (4, 2)
+        # |             X  O |
+        # |       X     X  O |
+        # --6--5--4--3--2--1-+
+        self.assertEqual(
+            backgammon.Backgammon("AACAMQEAAAAAAA", "cAnqAAAAAAAE").generate_plays(),
+            [
+                Play(
+                    moves=(
+                        Move(pips=2, source=3, destination=1),
+                        Move(pips=4, source=1, destination=None),
+                    ),
+                    position=Position(
+                        board_points=(-2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                        player_bar=0,
+                        player_off=13,
+                        opponent_bar=0,
+                        opponent_off=13,
+                    ),
+                ),
+                Play(
+                    moves=(
+                        Move(pips=4, source=3, destination=None),
+                        Move(pips=2, source=1, destination=None),
+                    ),
+                    position=Position(
+                        board_points=(-2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                        player_bar=0,
+                        player_off=14,
+                        opponent_bar=0,
+                        opponent_off=13,
+                    ),
+                ),
+            ],
+        )
+
+        # |      (6, 4)
+        # |    X           O |
+        # |    X     X     O |
+        # --6--5--4--3--2--1-+
+        self.assertEqual(
+            backgammon.Backgammon("AACAIQMAAAAAAA", "cAnzAAAAAAAE").generate_plays(),
+            [
+                Play(
+                    moves=(
+                        Move(pips=6, source=4, destination=None),
+                    ),
+                    position=Position(
+                        board_points=(-2, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                        player_bar=0,
+                        player_off=13,
+                        opponent_bar=0,
+                        opponent_off=13,
+                    ),
+                )
+            ],
+        )
+
+        # |      (6, 4)
+        # |    X           O |
+        # | X  X     X     O |
+        # --6--5--4--3--2--1-+
+        self.assertEqual(
+            backgammon.Backgammon("AACAIQsAAAAAAA", "cAnzAAAAAAAE").generate_plays(),
+            [
+                Play(
+                    moves=(
+                        Move(pips=4, source=5, destination=1),
+                        Move(pips=6, source=4, destination=None),
+                    ),
+                    position=Position(
+                        board_points=(-2, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+                        player_bar=0,
+                        player_off=12,
+                        opponent_bar=0,
+                        opponent_off=13,
+                    ),
+                )
+            ],
+        )
+    # fmt: on
 
     @mock.patch("random.SystemRandom.randrange", side_effect=[3, 4])
     def test_start(self, randrange_mock):
