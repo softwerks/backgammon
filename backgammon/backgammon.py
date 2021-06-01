@@ -190,7 +190,9 @@ class Backgammon:
             self.match.turn = Player.ONE
         return self.match.dice
 
-    def play(self, moves: Tuple[Tuple[Optional[int], Optional[int]], ...]) -> None:
+    def play(
+        self, moves: Tuple[Tuple[Optional[int], Optional[int]], ...]
+    ) -> "Backgammon":
         """Excecute a play, a sequence of moves."""
         new_position: PositionType = self.position
         for source, destination in moves:
@@ -221,6 +223,8 @@ class Backgammon:
             position_id: str = self.position.encode()
             match_id: str = self.match.encode()
             raise BackgammonError(f"Invalid move: {position_id}:{match_id} {moves}")
+
+        return self
 
     def double(self) -> "Backgammon":
         if self.match.dice != (0, 0):
