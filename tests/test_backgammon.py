@@ -22,6 +22,56 @@ from backgammon.position import Position
 
 class TestBackgammon(unittest.TestCase):
     # fmt: off
+    def test_enter(self):
+        # -----19-20-21-22-23-24-+
+        # |   | O  O  O  O  O  O |
+        # |   | O  O  O  O  O  O |
+        # |   |                  |
+        # |BAR|      (5, 4)      |
+        # | X |                  |
+        self.assertEqual(
+            backgammon.Backgammon("27YBAAAAACAAAA", "cInyAAAAAAAE").generate_plays(),
+            [],
+        )
+
+        # -----19-20-21-22-23-24-+
+        # |   | O     O  O  O  O |
+        # |   | O        O  O  O |
+        # |   |                  |
+        # |BAR|      (5, 4)      |
+        # | X |                  |
+        self.assertEqual(
+            backgammon.Backgammon("2zIAAAAAAAQAAA", "cInyAAAAAAAE").generate_plays(),
+            [
+                Play(
+                    moves=(
+                        Move(pips=4, source=None, destination=20),
+                        Move(pips=5, source=20, destination=15),
+                    ),
+                    position=Position(
+                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, -2, 0, 0, -2, -2, -2),
+                        player_bar=0,
+                        player_off=14,
+                        opponent_bar=1,
+                        opponent_off=6,
+                    ),
+                ),
+                Play(
+                    moves=(
+                        Move(pips=5, source=None, destination=19),
+                        Move(pips=4, source=19, destination=15),
+                    ),
+                    position=Position(
+                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, -2, 0, -1, -2, -2, -2),
+                        player_bar=0,
+                        player_off=14,
+                        opponent_bar=0,
+                        opponent_off=6,
+                    ),
+                ),
+            ],
+        )
+
     def test_bear_off(self):
         # |      (4, 3)
         # |       X  X     O |
@@ -124,6 +174,100 @@ class TestBackgammon(unittest.TestCase):
                         opponent_off=13,
                     ),
                 )
+            ],
+        )
+
+    def test_move(self):
+        # +13-14-15-16-17-18------19-20-21-22-23-24-+
+        # |             O  O |   | O  O  O  O     X |
+        # |             O  O |   | O  O  O  O       |
+        # |                O |   | O  O             |
+        # |                  |   |                  |
+        # |                  |   |                  |
+        # |                  |BAR|      (6, 6)      |
+        # |                  |   |                X |
+        # |                  |   |                X |
+        # |                  |   |             X  X |
+        # |                  |   |    X  X  X  X  X |
+        # |                  |   |    X  X  X  X  X |
+        # +12-11-10--9--8--7-------6--5--4--3--2--1-+
+        self.assertEqual(
+            backgammon.Backgammon("bHc3AADfbQMAIA", "cAn7AAAAAAAE").generate_plays(),
+            [],
+        )
+
+        # -19-20-21-22-23-24-+
+        # | O     O  X  X  X |
+        # |       O  X       |
+        # |          X       |
+        # |      (1, 1)      |
+        self.assertEqual(
+            backgammon.Backgammon("mAAAAAAArgAAAA", "cInkAAAAAAAE").generate_plays(),
+            [
+                Play(
+                    moves=(
+                        Move(pips=1, source=22, destination=21),
+                        Move(pips=1, source=23, destination=22),
+                        Move(pips=1, source=22, destination=21),
+                    ),
+                    position=Position(
+                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 0, -2, 5, 0, 0),
+                        player_bar=0,
+                        player_off=10,
+                        opponent_bar=0,
+                        opponent_off=12,
+                    ),
+                )
+            ],
+        )
+
+        # +13-14-15-16-17-18------19-20-21-22-23-24-+
+        # | O  O     O  O  X |   |       O  O  O  X |
+        # |    O     O  O    |   |       O     O    |
+        # |          O       |   |       O     O    |
+        # |                  |   |      (3, 2)      |
+        self.assertEqual(
+            backgammon.Backgammon("rsPOAgAAAAIBAA", "cImpAAAAAAAE").generate_plays(),
+            [
+                Play(
+                    moves=(
+                        Move(pips=3, source=17, destination=14),
+                        Move(pips=2, source=14, destination=12),
+                    ),
+                    position=Position(
+                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -2, 0, -3, -2, 0, 0, 0, -3, -1, -3, 1),
+                        player_bar=0,
+                        player_off=13,
+                        opponent_bar=1,
+                        opponent_off=0,
+                    ),
+                ),
+                Play(
+                    moves=(
+                        Move(pips=3, source=17, destination=14),
+                        Move(pips=2, source=23, destination=21),
+                    ),
+                    position=Position(
+                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -2, 1, -3, -2, 0, 0, 0, -3, 1, -3, 0),
+                        player_bar=0,
+                        player_off=13,
+                        opponent_bar=1,
+                        opponent_off=0,
+                    ),
+                ),
+                Play(
+                    moves=(
+                        Move(pips=2, source=23, destination=21),
+                        Move(pips=3, source=21, destination=18),
+                    ),
+                    position=Position(
+                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -2, 0, -3, -2, 1, 1, 0, -3, 0, -3, 0),
+                        player_bar=0,
+                        player_off=13,
+                        opponent_bar=1,
+                        opponent_off=0,
+                    ),
+                ),
             ],
         )
     # fmt: on
