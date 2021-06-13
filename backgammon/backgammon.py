@@ -218,6 +218,8 @@ class Backgammon:
                     self.match.reset_cube()
                     self.position = backgammon.position.decode(STARTING_POSITION_ID)
                     self.first_roll()
+            else:
+                self.end_turn()
 
         else:
             position_id: str = self.position.encode()
