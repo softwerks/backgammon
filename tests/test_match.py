@@ -53,6 +53,15 @@ class TestMatch(unittest.TestCase):
         self.assertEqual(
             match.decode("MIFlABAAEAAA").update_score(3), match.decode("MIJlAEAAEAAA")
         )
+        self.assertEqual(
+            match.decode("MIGqACAAGAAA").update_score(2), match.decode("sIGqAEAAGAAA")
+        )
+        self.assertEqual(
+            match.decode("QYnqACAAIAAA").update_score(1), match.decode("wYnqACAAMAAA")
+        )
+        self.assertEqual(
+            match.decode("MIGqACAAIAAA").update_score(2), match.decode("MIGqAEAAIAAA")
+        )
 
     def test_encode(self):
         self.assertEqual(

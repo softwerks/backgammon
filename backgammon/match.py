@@ -98,10 +98,22 @@ class Match:
     def update_score(self, multiplier: int) -> "Match":
         points: int = self.cube_value * multiplier
 
+        self.crawford = False
+
         if self.player is Player.ZERO:
             self.player_0_score += points
+            if (
+                self.length - self.player_0_score == 1
+                and self.length - self.player_1_score > 1
+            ):
+                self.crawford = True
         else:
             self.player_1_score += points
+            if (
+                self.length - self.player_1_score == 1
+                and self.length - self.player_0_score > 1
+            ):
+                self.crawford = True
 
         self.double = False
 

@@ -329,7 +329,7 @@ class TestBackgammon(unittest.TestCase):
             backgammon.Backgammon("2+4NAAAhAAAAAA", "cAlvAAAAAAAE")
             .play(((4, None), (0, None)))
             .encode(),
-            "4HPwATDgc/ABMA:cIlxAAAAEAAA",
+            "4HPwATDgc/ABMA:8IlxAAAAEAAA",
         )
 
         self.assertEqual(
