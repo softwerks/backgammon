@@ -357,6 +357,9 @@ class TestBackgammon(unittest.TestCase):
         with self.assertRaises(backgammon.BackgammonError):
             backgammon.Backgammon("4HPhASLgc/ABMA", "MAHgAGAAKAAA").double()
 
+        with self.assertRaises(backgammon.BackgammonError):
+            backgammon.Backgammon("4HPhASLgc/ABMA", "8AmgAEAAGAAA").double()
+
         self.assertEqual(
             backgammon.Backgammon("0PPgATDgc+EBIg", "UQngAAAAAAAA").double().encode(),
             "0PPgATDgc+EBIg:URHgAAAAAAAA",
