@@ -238,6 +238,12 @@ class Backgammon:
             raise BackgammonError("Cannot double: not cube holder")
         elif self.match.double:
             raise BackgammonError("Cannot double: already doubled")
+        elif (
+            self.match.player_0_score
+            if self.match.player is Player.ZERO
+            else self.match.player_1_score + self.match.cube_value >= self.match.length
+        ):
+            raise BackgammonError("Cannot double: dead cube")
 
         self.match.double = True
         self.match.swap_turn()
