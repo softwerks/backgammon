@@ -100,7 +100,7 @@ class Match:
 
         self.crawford = False
 
-        if self.player is Player.ZERO:
+        if self.turn is Player.ZERO:
             self.player_0_score += points
             if (
                 self.length - self.player_0_score == 1

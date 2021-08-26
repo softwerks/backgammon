@@ -213,11 +213,7 @@ class Backgammon:
                         multiplier = 3
                     else:
                         multiplier = 2
-                self.match.update_score(multiplier)
-                if self.match.game_state is GameState.PLAYING:
-                    self.match.reset_cube()
-                    self.position = backgammon.position.decode(STARTING_POSITION_ID)
-                    self.first_roll()
+                self.end_game(multiplier)
             else:
                 self.end_turn()
 
@@ -277,6 +273,32 @@ class Backgammon:
 
         return self
 
+    def resign(self, resign_type: Resign) -> "Backgammon":
+        if self.match.resign is Resign.NONE:
+            self.match.resign = resign_type
+            self.match.swap_turn()
+        else:
+            raise BackgammonError("Resignation has already been offered.")
+
+        return self
+
+    def accept_resignation(self) -> "Backgammon":
+        if self.match.resign is not Resign.NONE:
+            self.end_game(self.match.resign.value)
+        else:
+            raise BackgammonError("Resignation hasn't been offered")
+
+        return self
+
+    def reject_resignation(self) -> "Backgammon":
+        if self.match.resign is not Resign.NONE:
+            self.match.resign = Resign.NONE
+            self.match.swap_turn()
+        else:
+            raise BackgammonError("Resignation hasn't been offered")
+
+        return self
+
     def skip(self) -> "Backgammon":
         num_plays: int = len(self.generate_plays())
         if num_plays == 0:
@@ -290,6 +312,18 @@ class Backgammon:
         self.position = self.position.swap_players()
         self.match.swap_players()
         self.match.reset_dice()
+
+        return self
+
+    def end_game(self, multiplier: int) -> "Backgammon":
+        self.match.update_score(multiplier)
+
+        self.match.resign = Resign.NONE
+
+        if self.match.game_state is GameState.PLAYING:
+            self.match.reset_cube()
+            self.position = backgammon.position.decode(STARTING_POSITION_ID)
+            self.first_roll()
 
         return self
 
