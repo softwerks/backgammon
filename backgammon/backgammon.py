@@ -237,8 +237,8 @@ class Backgammon:
         elif (
             self.match.player_0_score
             if self.match.player is Player.ZERO
-            else self.match.player_1_score + self.match.cube_value >= self.match.length
-        ):
+            else self.match.player_1_score
+        ) + self.match.cube_value >= self.match.length:
             raise BackgammonError("Cannot double: dead cube")
         elif self.match.crawford:
             raise BackgammonError("Cannot double: crawford game")
