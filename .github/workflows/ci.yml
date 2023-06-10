@@ -1,0 +1,25 @@
+name: CI
+
+on: [push, workflow_dispatch]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Black
+        uses: psf/black@stable
+        with:
+          options: "--check --diff --color"
+          version: "23.3.0"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Run tests
+        run: |
+          python -m unittest
