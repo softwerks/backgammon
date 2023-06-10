@@ -54,7 +54,7 @@ class BackgammonShell(cmd.Cmd):
 
         def parse_arg(arg: str) -> Moves:
             arg_ints: List[Optional[int]] = list(
-                map(lambda n: int(n) if n.isdigit() else None, arg.split())
+                map(lambda n: int(n) - 1 if n.isdigit() else None, arg.split())
             )
 
             if len(arg_ints) % 2 == 1:
@@ -91,8 +91,6 @@ class BackgammonShell(cmd.Cmd):
             print(self.game)
             del self.game
         else:
-            self.game.end_turn()
-
             die_1, die_2 = self.game.roll()
             print(f"Rolled {die_1} {die_2}")
             print(self.game)
