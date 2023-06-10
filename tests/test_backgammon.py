@@ -41,7 +41,7 @@ class TestBackgammon(unittest.TestCase):
         # |BAR|      (5, 4)      |
         # | X |                  |
         self.assertEqual(
-            backgammon.Backgammon("2zIAAAAAAAQAAA", "cInyAAAAAAAE").generate_plays(),
+            sorted(backgammon.Backgammon("2zIAAAAAAAQAAA", "cInyAAAAAAAE").generate_plays()),
             [
                 Play(
                     moves=(
@@ -101,7 +101,7 @@ class TestBackgammon(unittest.TestCase):
         # |       X     X  O |
         # --6--5--4--3--2--1-+
         self.assertEqual(
-            backgammon.Backgammon("AACAMQEAAAAAAA", "cAnqAAAAAAAE").generate_plays(),
+            sorted(backgammon.Backgammon("AACAMQEAAAAAAA", "cAnqAAAAAAAE").generate_plays()),
             [
                 Play(
                     moves=(
@@ -227,8 +227,21 @@ class TestBackgammon(unittest.TestCase):
         # |          O       |   |       O     O    |
         # |                  |   |      (3, 2)      |
         self.assertEqual(
-            backgammon.Backgammon("rsPOAgAAAAIBAA", "cImpAAAAAAAE").generate_plays(),
+            sorted(backgammon.Backgammon("rsPOAgAAAAIBAA", "cImpAAAAAAAE").generate_plays()),
             [
+                Play(
+                    moves=(
+                        Move(pips=2, source=23, destination=21),
+                        Move(pips=3, source=21, destination=18),
+                    ),
+                    position=Position(
+                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -2, 0, -3, -2, 1, 1, 0, -3, 0, -3, 0),
+                        player_bar=0,
+                        player_off=13,
+                        opponent_bar=1,
+                        opponent_off=0,
+                    ),
+                ),
                 Play(
                     moves=(
                         Move(pips=3, source=17, destination=14),
@@ -249,19 +262,6 @@ class TestBackgammon(unittest.TestCase):
                     ),
                     position=Position(
                         board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -2, 1, -3, -2, 0, 0, 0, -3, 1, -3, 0),
-                        player_bar=0,
-                        player_off=13,
-                        opponent_bar=1,
-                        opponent_off=0,
-                    ),
-                ),
-                Play(
-                    moves=(
-                        Move(pips=2, source=23, destination=21),
-                        Move(pips=3, source=21, destination=18),
-                    ),
-                    position=Position(
-                        board_points=(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -2, 0, -3, -2, 1, 1, 0, -3, 0, -3, 0),
                         player_bar=0,
                         player_off=13,
                         opponent_bar=1,
