@@ -1,6 +1,8 @@
 backgammon
 ==========
 
+.. image:: https://github.com/softwerks/backgammon/actions/workflows/ci.yml/badge.svg
+
 Installation
 ------------
 
