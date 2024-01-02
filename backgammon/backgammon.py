@@ -169,16 +169,16 @@ class Backgammon:
             raise BackgammonError(f"Dice have already been rolled: {self.match.dice}")
 
         self.match.dice = (
-            random.SystemRandom().randrange(1, 6),
-            random.SystemRandom().randrange(1, 6),
+            random.SystemRandom().randrange(1, 7),
+            random.SystemRandom().randrange(1, 7),
         )
         return self.match.dice
 
     def first_roll(self) -> Tuple[int, int]:
         while True:
             self.match.dice = (
-                random.SystemRandom().randrange(1, 6),
-                random.SystemRandom().randrange(1, 6),
+                random.SystemRandom().randrange(1, 7),
+                random.SystemRandom().randrange(1, 7),
             )
             if self.match.dice[0] != self.match.dice[1]:
                 break
